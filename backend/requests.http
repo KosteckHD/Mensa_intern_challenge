@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:3000/api
+@productId = replace-with-product-id
+@reservationId = replace-with-reservation-id
+@orderId = replace-with-order-id
+
+### Health
+GET {{baseUrl}}/health
+
+### List products
+GET {{baseUrl}}/products
+
+### Create product
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{
+  "sku": "NIKE-AJ1-BRED-2026",
+  "brand": "Nike",
+  "model": "Air Jordan 1 Retro High OG",
+  "name": "Air Jordan 1 Retro High OG Bred",
+  "colorway": "Black/Varsity Red/White",
+  "description": "Limited sneaker drop for a high-demand Jordan release.",
+  "priceCents": 89900,
+  "imageUrl": "https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&w=1200&q=80",
+  "releaseAt": "2026-07-15T16:00:00.000Z",
+  "stockTotal": 5
+}
+
+### Reserve one pair
+POST {{baseUrl}}/reservations
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "customerEmail": "buyer@example.com",
+  "quantity": 1
+}
+
+### Checkout reservation
+POST {{baseUrl}}/reservations/{{reservationId}}/checkout
+
+### Cancel reservation
+POST {{baseUrl}}/reservations/{{reservationId}}/cancel
+
+### Cleanup expired reservations
+POST {{baseUrl}}/reservations/cleanup/expired
+
+### List reservations
+GET {{baseUrl}}/reservations
+
+### List orders
+GET {{baseUrl}}/orders
+
+### Get order
+GET {{baseUrl}}/orders/{{orderId}}
