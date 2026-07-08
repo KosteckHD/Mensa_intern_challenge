@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:3000/api
-@productId = replace-with-product-id
-@reservationId = replace-with-reservation-id
-@orderId = replace-with-order-id
+@productId = 1
+@reservationId = 1
+@orderId = 1
 
 ### Health
 GET {{baseUrl}}/health
@@ -23,7 +23,28 @@ Content-Type: application/json
   "priceCents": 89900,
   "imageUrl": "https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&w=1200&q=80",
   "releaseAt": "2026-07-15T16:00:00.000Z",
-  "stockTotal": 5
+  "sizes": [
+    { "sizeCode": "EU 41", "stockTotal": 1 },
+    { "sizeCode": "EU 42", "stockTotal": 3 },
+    { "sizeCode": "EU 43", "stockTotal": 1 }
+  ]
+}
+
+### Add a size
+POST {{baseUrl}}/products/{{productId}}/sizes
+Content-Type: application/json
+
+{
+  "sizeCode": "EU 44",
+  "stockTotal": 2
+}
+
+### Update size supply
+PATCH {{baseUrl}}/products/{{productId}}/sizes/EU%2044
+Content-Type: application/json
+
+{
+  "stockTotal": 3
 }
 
 ### Reserve one pair
@@ -31,13 +52,24 @@ POST {{baseUrl}}/reservations
 Content-Type: application/json
 
 {
-  "productId": "{{productId}}",
+  "productId": {{productId}},
   "customerEmail": "buyer@example.com",
-  "quantity": 1
+  "quantity": 1,
+  "shoeSize": "EU 42"
 }
 
 ### Checkout reservation
 POST {{baseUrl}}/reservations/{{reservationId}}/checkout
+Content-Type: application/json
+
+{
+  "firstName": "Ada",
+  "lastName": "Lovelace",
+  "shippingAddress": "1 Drop Street",
+  "shippingCity": "Warsaw",
+  "shippingPostalCode": "00-001",
+  "paymentReference": "demo-card-4242"
+}
 
 ### Cancel reservation
 POST {{baseUrl}}/reservations/{{reservationId}}/cancel

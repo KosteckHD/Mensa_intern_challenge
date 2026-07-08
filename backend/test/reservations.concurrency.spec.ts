@@ -50,11 +50,12 @@ describeIfDatabase('Reservations concurrency', () => {
       imageUrl: null,
       releaseAt: null,
       stockTotal: 5,
+      sizes: [{ sizeCode: 'EU 42', stockTotal: 5 }],
     });
 
     const attempts = await Promise.allSettled(
       Array.from({ length: 50 }, () =>
-        reservationsService.create({ productId: product.id }),
+        reservationsService.create({ productId: product.id, shoeSize: 'EU 42' }),
       ),
     );
 
@@ -69,6 +70,8 @@ describeIfDatabase('Reservations concurrency', () => {
     expect(refreshed?.stock_available).toBe(0);
     expect(refreshed?.stock_reserved).toBe(5);
     expect(refreshed?.stock_sold).toBe(0);
+    expect(refreshed?.sizes.find((size) => size.size_code === 'EU 42')?.stock_available).toBe(0);
+    expect(refreshed?.sizes.find((size) => size.size_code === 'EU 42')?.stock_reserved).toBe(5);
   });
 
   it('creates an order during checkout and moves reserved stock to sold', async () => {
@@ -85,20 +88,26 @@ describeIfDatabase('Reservations concurrency', () => {
       imageUrl: null,
       releaseAt: null,
       stockTotal: 1,
+      sizes: [{ sizeCode: 'EU 42', stockTotal: 1 }],
     });
 
     const reservation = await reservationsService.create({
       productId: product.id,
       customerEmail: 'checkout@example.com',
+      shoeSize: 'EU 42',
     });
 
-    const checkout = await reservationsService.checkout(reservation.id);
+    const checkout = await reservationsService.checkout(
+      reservation.id,
+      checkoutDetails(),
+    );
     const refreshed = await productsRepository.findById(product.id);
 
     expect(checkout.reservation.status).toBe('completed');
     expect(checkout.order.reservationId).toBe(reservation.id);
     expect(checkout.order.unitPriceCents).toBe(54900);
-    expect(checkout.order.totalPriceCents).toBe(54900);
+    expect(checkout.order.shippingCents).toBe(3500);
+    expect(checkout.order.totalPriceCents).toBe(58400);
     expect(refreshed?.stock_available).toBe(0);
     expect(refreshed?.stock_reserved).toBe(0);
     expect(refreshed?.stock_sold).toBe(1);
@@ -118,11 +127,13 @@ describeIfDatabase('Reservations concurrency', () => {
       imageUrl: null,
       releaseAt: null,
       stockTotal: 1,
+      sizes: [{ sizeCode: 'EU 42', stockTotal: 1 }],
     });
 
     const reservation = await reservationsService.create({
       productId: product.id,
       customerEmail: 'expired@example.com',
+      shoeSize: 'EU 42',
     });
 
     await database.query(
@@ -145,3 +156,14 @@ describeIfDatabase('Reservations concurrency', () => {
     expect(refreshed?.stock_sold).toBe(0);
   });
 });
+
+function checkoutDetails() {
+  return {
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    shippingAddress: '1 Drop Street',
+    shippingCity: 'Warsaw',
+    shippingPostalCode: '00-001',
+    paymentReference: 'test-payment-4242',
+  };
+}

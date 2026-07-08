@@ -1,7 +1,5 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 CREATE TABLE IF NOT EXISTS products (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id serial PRIMARY KEY,
   sku text NOT NULL UNIQUE,
   slug text NOT NULL UNIQUE,
   brand text NOT NULL,
@@ -28,8 +26,8 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 CREATE TABLE IF NOT EXISTS reservations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid NOT NULL REFERENCES products(id),
+  id serial PRIMARY KEY,
+  product_id integer NOT NULL REFERENCES products(id),
   customer_email text,
   quantity integer NOT NULL DEFAULT 1,
   status text NOT NULL DEFAULT 'active',

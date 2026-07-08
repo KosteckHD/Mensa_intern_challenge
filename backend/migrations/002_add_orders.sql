@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS orders (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id serial PRIMARY KEY,
   order_number text NOT NULL UNIQUE,
-  reservation_id uuid NOT NULL UNIQUE REFERENCES reservations(id),
-  product_id uuid NOT NULL REFERENCES products(id),
+  reservation_id integer NOT NULL UNIQUE REFERENCES reservations(id),
+  product_id integer NOT NULL REFERENCES products(id),
   customer_email text,
   quantity integer NOT NULL,
   unit_price_cents integer NOT NULL,

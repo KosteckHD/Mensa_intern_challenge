@@ -49,6 +49,15 @@ export function requirePositiveInteger(value: unknown, field: string): number {
   return Number(value);
 }
 
+export function parsePositiveInteger(value: unknown, field: string): number {
+  const parsed =
+    typeof value === 'string' && value.trim() !== ''
+      ? Number(value)
+      : value;
+
+  return requirePositiveInteger(parsed, field);
+}
+
 export function optionalDate(value: unknown, field: string): Date | null {
   if (value === undefined || value === null || value === '') {
     return null;

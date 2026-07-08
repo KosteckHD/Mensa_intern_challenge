@@ -1,5 +1,18 @@
-import { Body, Controller, Get, Inject, Param, Post, Query } from '@nestjs/common';
-import { CreateReservationBody, ListReservationsQuery } from './dto';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  CheckoutReservationBody,
+  CreateReservationBody,
+  ListReservationsQuery,
+} from './dto';
 import { CheckoutResult, Reservation } from './reservation.types';
 import { ReservationsService } from './reservations.service';
 
@@ -21,17 +34,20 @@ export class ReservationsController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: string): Promise<Reservation> {
+  findById(@Param('id', ParseIntPipe) id: number): Promise<Reservation> {
     return this.reservationsService.findById(id);
   }
 
   @Post(':id/checkout')
-  checkout(@Param('id') id: string): Promise<CheckoutResult> {
-    return this.reservationsService.checkout(id);
+  checkout(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: CheckoutReservationBody,
+  ): Promise<CheckoutResult> {
+    return this.reservationsService.checkout(id, body);
   }
 
   @Post(':id/cancel')
-  cancel(@Param('id') id: string): Promise<Reservation> {
+  cancel(@Param('id', ParseIntPipe) id: number): Promise<Reservation> {
     return this.reservationsService.cancel(id);
   }
 

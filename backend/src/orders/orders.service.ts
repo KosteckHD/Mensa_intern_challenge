@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { parsePositiveInteger } from '../shared/validation';
 import { ListOrdersQuery } from './dto';
 import { mapOrder, Order, OrderStatus } from './order.types';
 import { OrdersRepository } from './orders.repository';
@@ -18,15 +19,19 @@ export class OrdersService {
   async list(query: ListOrdersQuery): Promise<Order[]> {
     const status = query.status ? parseStatus(query.status) : undefined;
     const rows = await this.ordersRepository.list({
-      productId: query.productId,
-      reservationId: query.reservationId,
+      productId: query.productId
+        ? parsePositiveInteger(query.productId, 'productId')
+        : undefined,
+      reservationId: query.reservationId
+        ? parsePositiveInteger(query.reservationId, 'reservationId')
+        : undefined,
       status,
     });
 
     return rows.map(mapOrder);
   }
 
-  async findById(id: string): Promise<Order> {
+  async findById(id: string | number): Promise<Order> {
     const row = await this.ordersRepository.findById(id);
 
     if (!row) {

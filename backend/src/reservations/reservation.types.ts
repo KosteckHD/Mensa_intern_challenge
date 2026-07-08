@@ -3,10 +3,11 @@ import { Order } from '../orders/order.types';
 export type ReservationStatus = 'active' | 'completed' | 'expired' | 'cancelled';
 
 export interface ReservationRow {
-  id: string;
-  product_id: string;
+  id: number;
+  product_id: number;
   customer_email: string | null;
   quantity: number;
+  shoe_size: string;
   status: ReservationStatus;
   expires_at: Date;
   created_at: Date;
@@ -17,10 +18,11 @@ export interface ReservationRow {
 }
 
 export interface Reservation {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
   customerEmail: string | null;
   quantity: number;
+  shoeSize: string;
   status: ReservationStatus;
   expiresAt: Date;
   createdAt: Date;
@@ -35,6 +37,7 @@ export function mapReservation(row: ReservationRow): Reservation {
     productId: row.product_id,
     customerEmail: row.customer_email,
     quantity: row.quantity,
+    shoeSize: row.shoe_size,
     status: row.status,
     expiresAt: row.expires_at,
     createdAt: row.created_at,

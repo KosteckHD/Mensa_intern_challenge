@@ -8,7 +8,9 @@ PostgreSQL is used because inventory correctness is a transactional problem. The
 
 ## Main invariant
 
-`products.stock_available + products.stock_reserved + products.stock_sold = products.stock_total`
+`stock_available + stock_reserved + stock_sold = stock_total`
+
+This invariant exists on both `products` and `product_sizes`. Product rows keep aggregate counters for fast reads. `product_sizes` is the critical reservation table because each sneaker size has separate supply.
 
 Reservations move stock through this lifecycle:
 
@@ -38,6 +40,9 @@ POST   /api/products
 GET    /api/products/:id
 PATCH  /api/products/:id
 DELETE /api/products/:id
+POST   /api/products/:id/sizes
+PATCH  /api/products/:id/sizes/:sizeCode
+DELETE /api/products/:id/sizes/:sizeCode
 
 POST   /api/reservations
 GET    /api/reservations
@@ -55,15 +60,16 @@ Checkout returns both the completed reservation and the created order:
 ```json
 {
   "reservation": {
-    "id": "uuid",
+    "id": 12,
     "status": "completed"
   },
   "order": {
-    "id": "uuid",
+    "id": 4,
     "orderNumber": "ORD-4EE946DBDE1C",
     "status": "confirmed",
     "unitPriceCents": 89900,
-    "totalPriceCents": 89900
+    "shippingCents": 3500,
+    "totalPriceCents": 93400
   }
 }
 ```
@@ -73,16 +79,20 @@ Checkout returns both the completed reservation and the created order:
 Creating a reservation uses a single conditional update inside a database transaction:
 
 ```sql
-UPDATE products
-SET stock_available = stock_available - $2,
-    stock_reserved = stock_reserved + $2
-WHERE id = $1
-  AND stock_available >= $2
-  AND archived_at IS NULL
+UPDATE product_sizes
+SET stock_available = stock_available - $3,
+    stock_reserved = stock_reserved + $3
+WHERE product_id = $1
+  AND size_code = $2
+  AND stock_available >= $3
 RETURNING *;
 ```
 
-If `RETURNING` gives no row, the request receives `409 Conflict`. PostgreSQL row-level locking makes concurrent attempts serialize on the product row, so the same pair cannot be reserved twice.
+If `RETURNING` gives no row, the request receives `409 Conflict`. PostgreSQL row-level locking makes concurrent attempts serialize on the product-size row, so the same size cannot be reserved twice.
+
+## Primary keys
+
+The schema uses `serial` integer primary keys. This keeps the recruitment challenge easy to inspect, seed, debug, and explain. The trade-off is that public numeric IDs are enumerable, so a production version could keep internal `bigserial` IDs and add separate public UUIDs for API URLs.
 
 ## Orders
 
@@ -91,7 +101,11 @@ Orders are created only during checkout. The app does not expose `POST /orders` 
 Each order stores a price snapshot:
 
 - `unit_price_cents`
+- `shipping_cents`
 - `total_price_cents`
+
+It also stores shipping details and an opaque payment reference. Raw card data
+is intentionally not accepted or persisted.
 
 This prevents historical orders from changing if the product price is edited later.
 
@@ -104,6 +118,18 @@ set TEST_DATABASE_URL=postgres://postgres:postgres@localhost:55432/sneaker_drop
 npm test
 ```
 
+For the isolated test database used by the full suite:
+
+```bash
+docker compose -f docker-compose.e2e.yml up -d --wait
+set DATABASE_URL=postgres://postgres:postgres@localhost:55433/sneaker_drop_e2e
+npm run migrate
+set TEST_DATABASE_URL=postgres://postgres:postgres@localhost:55433/sneaker_drop_e2e
+npm test
+```
+
 ## Frontend prompts
 
 Google Stitch prompts are in `docs/google-stitch-prompts.md`.
+
+The implemented React frontend is in `../frontend`.

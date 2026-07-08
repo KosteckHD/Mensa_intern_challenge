@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
 
+const sizes = ['EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44', 'EU 45', 'EU 46'] as const;
+
 const drops = [
   {
     sku: 'NIKE-AJ1-LOST-FOUND',
@@ -14,6 +16,7 @@ const drops = [
       'https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&w=1200&q=80',
     releaseAt: '2026-07-15T16:00:00.000Z',
     stockTotal: 12,
+    sizeStocks: [1, 1, 2, 3, 2, 2, 1],
   },
   {
     sku: 'NIKE-DUNK-PANDA-LOW',
@@ -28,6 +31,7 @@ const drops = [
       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80',
     releaseAt: '2026-07-18T16:00:00.000Z',
     stockTotal: 20,
+    sizeStocks: [2, 3, 4, 4, 3, 2, 2],
   },
   {
     sku: 'NIKE-AM1-LIMITED-BLUE',
@@ -42,6 +46,7 @@ const drops = [
       'https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?auto=format&fit=crop&w=1200&q=80',
     releaseAt: '2026-07-20T16:00:00.000Z',
     stockTotal: 10,
+    sizeStocks: [1, 1, 2, 2, 2, 1, 1],
   },
 ];
 
@@ -56,7 +61,7 @@ async function main(): Promise<void> {
 
   try {
     for (const drop of drops) {
-      await pool.query(
+      const productResult = await pool.query<{ id: number }>(
         `
           INSERT INTO products (
             sku,
@@ -85,7 +90,12 @@ async function main(): Promise<void> {
               price_cents = EXCLUDED.price_cents,
               image_url = EXCLUDED.image_url,
               release_at = EXCLUDED.release_at,
+              stock_total = EXCLUDED.stock_total,
+              stock_available = EXCLUDED.stock_available,
+              stock_reserved = 0,
+              stock_sold = 0,
               updated_at = now()
+              RETURNING id
         `,
         [
           drop.sku,
@@ -101,6 +111,29 @@ async function main(): Promise<void> {
           drop.stockTotal,
         ],
       );
+
+      const productId = productResult.rows[0].id;
+
+      await pool.query('DELETE FROM product_sizes WHERE product_id = $1', [productId]);
+
+      for (let index = 0; index < sizes.length; index += 1) {
+        const stockTotal = drop.sizeStocks[index];
+
+        await pool.query(
+          `
+            INSERT INTO product_sizes (
+              product_id,
+              size_code,
+              stock_total,
+              stock_available,
+              stock_reserved,
+              stock_sold
+            )
+            VALUES ($1, $2, $3, $3, 0, 0)
+          `,
+          [productId, sizes[index], stockTotal],
+        );
+      }
     }
 
     console.log(`Seeded ${drops.length} sneaker drops.`);

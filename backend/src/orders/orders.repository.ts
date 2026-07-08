@@ -5,11 +5,19 @@ import { OrderRow, OrderStatus } from './order.types';
 
 export interface CreateOrderData {
   orderNumber: string;
-  reservationId: string;
-  productId: string;
+  reservationId: string | number;
+  productId: string | number;
   customerEmail: string | null;
   quantity: number;
+  shoeSize: string;
   unitPriceCents: number;
+  shippingCents: number;
+  firstName: string;
+  lastName: string;
+  shippingAddress: string;
+  shippingCity: string;
+  shippingPostalCode: string;
+  paymentReference: string;
 }
 
 @Injectable()
@@ -20,8 +28,8 @@ export class OrdersRepository {
   ) {}
 
   async list(filters: {
-    productId?: string;
-    reservationId?: string;
+    productId?: number;
+    reservationId?: number;
     status?: OrderStatus;
   }): Promise<OrderRow[]> {
     const conditions: string[] = [];
@@ -59,7 +67,7 @@ export class OrdersRepository {
     return result.rows;
   }
 
-  async findById(id: string): Promise<OrderRow | null> {
+  async findById(id: string | number): Promise<OrderRow | null> {
     const result = await this.database.query<OrderRow>(
       `
         SELECT *
@@ -81,11 +89,23 @@ export class OrdersRepository {
           product_id,
           customer_email,
           quantity,
+          shoe_size,
           unit_price_cents,
+          shipping_cents,
           total_price_cents,
+          first_name,
+          last_name,
+          shipping_address,
+          shipping_city,
+          shipping_postal_code,
+          payment_reference,
           status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $5::integer * $6::integer, 'confirmed')
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          $5::integer * $7::integer + $8::integer,
+          $9, $10, $11, $12, $13, $14, 'confirmed'
+        )
         RETURNING *
       `,
       [
@@ -94,7 +114,15 @@ export class OrdersRepository {
         data.productId,
         data.customerEmail,
         data.quantity,
+        data.shoeSize,
         data.unitPriceCents,
+        data.shippingCents,
+        data.firstName,
+        data.lastName,
+        data.shippingAddress,
+        data.shippingCity,
+        data.shippingPostalCode,
+        data.paymentReference,
       ],
     );
 

@@ -11,7 +11,16 @@ import {
   requireNonNegativeInteger,
   requireString,
 } from '../shared/validation';
-import { CreateProductBody, UpdateProductBody } from './dto';
+import {
+  FOOTWEAR_SIZES,
+  isFootwearSize,
+} from '../shared/footwear-sizes';
+import {
+  CreateProductBody,
+  CreateProductSizeBody,
+  UpdateProductBody,
+  UpdateProductSizeBody,
+} from './dto';
 import { mapProduct, Product } from './product.types';
 import { ProductsRepository, UpdateProductData } from './products.repository';
 
@@ -27,7 +36,7 @@ export class ProductsService {
     return rows.map(mapProduct);
   }
 
-  async findById(id: string): Promise<Product> {
+  async findById(id: string | number): Promise<Product> {
     const row = await this.productsRepository.findById(id);
 
     if (!row) {
@@ -44,7 +53,8 @@ export class ProductsService {
     const name = requireString(body.name, 'name');
     const colorway = requireString(body.colorway, 'colorway');
     const priceCents = requireNonNegativeInteger(body.priceCents, 'priceCents');
-    const stockTotal = requireNonNegativeInteger(body.stockTotal, 'stockTotal');
+    const sizes = parseProductSizes(body.sizes, body.stockTotal);
+    const stockTotal = sizes.reduce((sum, size) => sum + size.stockTotal, 0);
 
     try {
       const row = await this.productsRepository.create({
@@ -59,6 +69,7 @@ export class ProductsService {
         imageUrl: optionalString(body.imageUrl, 'imageUrl'),
         releaseAt: optionalDate(body.releaseAt, 'releaseAt'),
         stockTotal,
+        sizes,
       });
 
       return mapProduct(row);
@@ -71,7 +82,7 @@ export class ProductsService {
     }
   }
 
-  async update(id: string, body: UpdateProductBody): Promise<Product> {
+  async update(id: string | number, body: UpdateProductBody): Promise<Product> {
     const data: UpdateProductData = {};
     let shouldRegenerateSlug = false;
 
@@ -136,7 +147,7 @@ export class ProductsService {
     }
   }
 
-  async archive(id: string): Promise<Product> {
+  async archive(id: string | number): Promise<Product> {
     const row = await this.productsRepository.archive(id);
 
     if (!row) {
@@ -144,6 +155,74 @@ export class ProductsService {
     }
 
     return mapProduct(row);
+  }
+
+  async createSize(
+    productId: number,
+    body: CreateProductSizeBody,
+  ): Promise<Product> {
+    const sizeCode = parseSizeCode(body.sizeCode);
+    const stockTotal = requireNonNegativeInteger(body.stockTotal, 'stockTotal');
+
+    try {
+      const created = await this.productsRepository.createSize(
+        productId,
+        sizeCode,
+        stockTotal,
+      );
+
+      if (!created) {
+        throw new NotFoundException('Product not found.');
+      }
+
+      return this.findById(productId);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException('This size already exists for the product.');
+      }
+      throw error;
+    }
+  }
+
+  async updateSize(
+    productId: number,
+    sizeCodeParam: string,
+    body: UpdateProductSizeBody,
+  ): Promise<Product> {
+    const sizeCode = parseSizeCode(sizeCodeParam);
+    const stockTotal = requireNonNegativeInteger(body.stockTotal, 'stockTotal');
+    const result = await this.productsRepository.updateSize(
+      productId,
+      sizeCode,
+      stockTotal,
+    );
+
+    if (result === 'not-found') {
+      throw new NotFoundException('Product size not found.');
+    }
+    if (result === 'below-allocated') {
+      throw new ConflictException(
+        'Stock total cannot be lower than reserved and sold stock.',
+      );
+    }
+
+    return this.findById(productId);
+  }
+
+  async deleteSize(productId: number, sizeCodeParam: string): Promise<Product> {
+    const sizeCode = parseSizeCode(sizeCodeParam);
+    const result = await this.productsRepository.deleteSize(productId, sizeCode);
+
+    if (result === 'not-found') {
+      throw new NotFoundException('Product size not found.');
+    }
+    if (result === 'allocated') {
+      throw new ConflictException(
+        'A size with reserved or sold stock cannot be deleted.',
+      );
+    }
+
+    return this.findById(productId);
   }
 }
 
@@ -164,4 +243,54 @@ function isUniqueViolation(error: unknown): boolean {
     'code' in error &&
     error.code === '23505'
   );
+}
+
+function parseProductSizes(
+  value: unknown,
+  legacyStockTotal: unknown,
+): Array<{ sizeCode: string; stockTotal: number }> {
+  if (value === undefined) {
+    return [
+      {
+        sizeCode: 'EU 42',
+        stockTotal: requireNonNegativeInteger(legacyStockTotal, 'stockTotal'),
+      },
+    ];
+  }
+
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new BadRequestException('sizes must be a non-empty array.');
+  }
+
+  const seen = new Set<string>();
+  return value.map((entry, index) => {
+    if (typeof entry !== 'object' || entry === null) {
+      throw new BadRequestException(`sizes[${index}] must be an object.`);
+    }
+
+    const size = entry as Record<string, unknown>;
+    const sizeCode = parseSizeCode(size.sizeCode);
+    if (seen.has(sizeCode)) {
+      throw new BadRequestException(`Duplicate sizeCode: ${sizeCode}.`);
+    }
+    seen.add(sizeCode);
+
+    return {
+      sizeCode,
+      stockTotal: requireNonNegativeInteger(
+        size.stockTotal,
+        `sizes[${index}].stockTotal`,
+      ),
+    };
+  });
+}
+
+function parseSizeCode(value: unknown): string {
+  const sizeCode = requireString(value, 'sizeCode');
+  if (!isFootwearSize(sizeCode)) {
+    throw new BadRequestException(
+      `sizeCode must be one of ${FOOTWEAR_SIZES.join(', ')}.`,
+    );
+  }
+  return sizeCode;
 }

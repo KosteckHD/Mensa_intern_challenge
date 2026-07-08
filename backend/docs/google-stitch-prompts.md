@@ -1,483 +1,71 @@
-# Google Stitch UI Specification
+# DropLock Google Stitch Mockups And Prompts
 
-Use this file as the frontend brief for Google Stitch.
+This file is the UI brief for Google Stitch. It should create mockups only. Do not ask Stitch to invent backend behavior, database logic, marketing copy, abstract illustrations, or generative decorative assets.
 
-The backend API should be running at:
+Backend API base URL for the final app:
 
 ```txt
 http://localhost:3100/api
 ```
 
-Create a React + TypeScript frontend for a limited sneaker drop app called **DropLock**.
-
-The app is not a marketing landing page. The first screen must be the actual product drop and reservation experience.
-
-## Product Concept
-
-DropLock is a limited sneaker release app inspired by high-demand drops like Nike/Jordan releases.
-
-The user should be able to:
-
-- View available sneaker drops.
-- See current inventory.
-- Reserve one pair.
-- See a reservation countdown.
-- Complete checkout before the reservation expires.
-- See a confirmed order after checkout.
-- Understand sold-out, expired, failed, loading, and empty states.
-
-## Visual Direction
-
-Create a premium sneaker-drop interface, not a generic ecommerce catalog and not a SaaS dashboard.
-
-Style:
-
-- Clean black and white base.
-- High contrast CTA buttons.
-- Product imagery is the main visual signal.
-- Small, sharp inventory/status badges.
-- Compact but polished layout.
-- Use subtle borders and restrained shadows.
-- Avoid oversized marketing hero sections.
-- Avoid decorative gradients and abstract illustrations.
-
-Suggested palette:
-
-- Background: near-white `#f7f7f4`
-- Text: almost-black `#111111`
-- Muted text: `#6b6b6b`
-- Borders: `#deded8`
-- Primary CTA: black
-- Success: deep green
-- Warning/failure: red or amber accents only where needed
-
-Typography:
-
-- Use a modern sans-serif.
-- Product names should be strong and compact.
-- Do not use viewport-scaled fonts.
-- Make sure all text fits on mobile.
-
-## Global App Shell
-
-All screens should share the same shell.
-
-Desktop layout:
-
-- Sticky top bar, 64px height.
-- Left: `DropLock` wordmark.
-- Center or right: small live status pill, e.g. `LIVE DROP`.
-- Right: small buttons for `Inventory`, `Orders`, and `Refresh`.
-- Main content max width around 1200-1320px.
-- Product/inventory area on the left.
-- Reservation or checkout panel on the right when active.
-
-Mobile layout:
-
-- Top bar becomes compact.
-- Product cards stack vertically.
-- Active reservation or checkout becomes a sticky bottom sheet.
-- Buttons must remain visible and must not overlap content.
-
-Global UI pieces:
-
-- Toast/banner area for API errors.
-- Loading skeletons.
-- Empty state.
-- Retry button for network errors.
-- Currency displayed from cents, e.g. `899.00 PLN` or `899 zl`.
-
-## Screen 1: Entry / Live Drop
-
-Purpose:
-
-This is the first screen users see. It should immediately communicate that a limited sneaker drop is live and products can be reserved.
-
-Desktop layout:
-
-- Top bar as described above.
-- First viewport contains:
-  - Left: featured product image from the first available drop.
-  - Right: compact drop summary panel.
-  - Below or beside: product cards preview.
-- Do not create a separate marketing hero. The product list must be visible in the first viewport.
-
-Drop summary panel content:
-
-- Title: `DropLock`
-- Subtitle: `Limited sneaker reservations`
-- Live status: `LIVE DROP`
-- Total available pairs across all loaded products.
-- Total sold pairs across all loaded products.
-- Short line: `Reserve a pair before checkout time runs out.`
-- CTA: `View inventory`
-
-Product preview cards:
-
-- Image.
-- Brand.
-- Model.
-- Colorway.
-- Price.
-- Available stock.
-- Reserve button.
-
-Behavior:
-
-- Fetch products with `GET /products` on load.
-- Show loading skeletons while fetching.
-- If no products are returned, show the empty state from Screen 7.
-- If the request fails, show the network failure state from Screen 7.
-
-## Screen 2: Full Inventory
-
-Purpose:
-
-Show the complete inventory and make stock status obvious.
-
-Desktop layout:
-
-- Page title: `Inventory`
-- Subtitle: `All limited pairs currently available for reservation.`
-- Above grid: compact stats row:
-  - `Products`
-  - `Available pairs`
-  - `Reserved`
-  - `Sold`
-- Product grid with 3 columns on desktop.
-- 2 columns on tablet.
-- 1 column on mobile.
-
-Product card content:
-
-- Product image with fixed aspect ratio.
-- Status badge:
-  - `Available` if `stockAvailable > 0`
-  - `Low stock` if `stockAvailable <= 3 && stockAvailable > 0`
-  - `Sold out` if `stockAvailable === 0`
-- Brand and model.
-- Product name.
-- Colorway.
-- SKU in small muted text.
-- Price.
-- Release date.
-- Stock counter: `X / Y pairs available`
-- Reserve button.
-
-Reserve button states:
-
-- Enabled: `Reserve pair`
-- Loading: `Reserving...`
-- Disabled sold out: `Sold out`
-
-Behavior:
-
-- Clicking a product card opens Screen 3 as a detail drawer or detail panel.
-- Clicking `Reserve pair` can either open Screen 3 or directly create a reservation if email is already known.
-- After a successful reservation, refresh products.
-- After a `409 Conflict`, refresh products and show the sold-out failure state.
-
-## Screen 3: Product Detail / Reserve
-
-Purpose:
-
-Let the user inspect one sneaker and reserve one pair.
-
-Desktop layout:
-
-- Use a right-side drawer or centered modal.
-- Left side: larger product image.
-- Right side: product details and reservation form.
-
-Content:
-
-- Brand.
-- Product name.
-- Model.
-- Colorway.
-- SKU.
-- Description.
-- Price.
-- Available stock.
-- Release date.
-- Quantity fixed at `1`.
-- Email input labelled `Email for reservation`.
-- Primary CTA: `Reserve pair`.
-- Secondary CTA: `Back to inventory`.
-
-Validation:
-
-- Email is optional from the backend perspective, but UI should ask for it.
-- If email is empty, allow reservation but show helper text: `You can reserve without email for this demo.`
-
-API:
-
-```http
-POST /reservations
-Content-Type: application/json
-
-{
-  "productId": "product-id",
-  "customerEmail": "buyer@example.com",
-  "quantity": 1
-}
-```
-
-Success behavior:
-
-- Store the reservation in `localStorage`.
-- Open Screen 4.
-- Refresh product inventory.
-
-Failure behavior:
-
-- `409`: show sold-out failure state.
-- Network error: show retry banner.
-
-## Screen 4: Active Reservation / Checkout
-
-Purpose:
-
-Show the active reservation and let the user finish checkout before it expires.
-
-Desktop layout:
-
-- If a reservation exists, show a persistent right-side panel.
-- The panel should be visible while browsing inventory.
-- On mobile, show it as a sticky bottom sheet.
-
-Panel content:
-
-- Header: `Reservation active`
-- Countdown timer from `reservation.expiresAt`.
-- Product thumbnail and product name.
-- Quantity.
-- Price estimate.
-- Reservation ID in small muted text.
-- Status badge: `active`.
-- Primary CTA: `Complete checkout`.
-- Secondary CTA: `Cancel reservation`.
-
-Countdown behavior:
-
-- Show minutes and seconds.
-- Under 60 seconds, visually emphasize the countdown.
-- At zero:
-  - Disable checkout.
-  - Show `Reservation expired`.
-  - Refresh product inventory.
-
-API:
-
-Checkout:
-
-```http
-POST /reservations/:id/checkout
-```
-
-Cancel:
-
-```http
-POST /reservations/:id/cancel
-```
-
-Checkout success:
-
-- Open Screen 5.
-- Clear active reservation from `localStorage`.
-- Refresh products.
-
-Checkout expired:
-
-- If backend returns `410`, open Screen 6B.
-- Clear active reservation from `localStorage`.
-- Refresh products.
-
-Checkout conflict:
-
-- If backend returns `409`, open Screen 6C.
-
-## Screen 5: Checkout Success
-
-Purpose:
-
-Confirm the order after checkout succeeds.
-
-Layout:
-
-- Use a focused confirmation view, modal, or full-width success section.
-- Do not make it look like a generic payment receipt page.
-- It should feel like a sneaker drop confirmation.
-
-Content:
-
-- Success badge: `Order confirmed`
-- Main title: `Your pair is locked.`
-- Order number from `order.orderNumber`.
-- Product thumbnail.
-- Product name.
-- Colorway.
-- Quantity.
-- Total price from `order.totalPriceCents`.
-- Reservation status: `completed`.
-- Order status: `confirmed`.
-- CTA: `Back to inventory`.
-- Secondary CTA: `View orders`.
-
-API response shape:
+## Core UX Rules
+
+- Build the real app experience first, not a landing page.
+- The first screen must show the live sneaker drop and inventory access.
+- Every product has multiple size variants. The user must select a shoe size before reserving.
+- Inventory status must be shown per size, not only per product.
+- Use images returned by the API (`imageUrl`) or neutral product placeholders. Do not create AI/generative artwork inside the UI.
+- Keep the interface compact, operational, and easy to scan.
+- Avoid nested cards, decorative blobs, generic SaaS dashboard styling, oversized hero-only screens, and explanatory in-app text about how the app works.
+- Keep buttons and labels short. Text must not overflow on mobile.
+- Use consistent header, spacing, status badges, and CTA placement across screens.
+
+Visual direction:
+
+- Premium sneaker drop.
+- Black and near-white base.
+- Sharp product imagery.
+- Thin borders.
+- 4-8px radius max.
+- High-contrast primary CTA.
+- Green only for confirmed/success states.
+- Red/amber only for real errors or urgent countdowns.
+
+## Required Mockup Set
+
+Create these mockups:
+
+1. Live Drop / Entry
+2. Full Inventory
+3. Product Detail + Size Selection
+4. Reservation Active
+5. Checkout Desktop
+6. Checkout Mobile
+7. Checkout Success
+8. Failure: Sold Out / Size Unavailable
+9. Failure: Reservation Expired
+10. Loading / Empty / Network Error
+11. Optional Orders History
+
+The screens should feel like one product, not separate unrelated pages.
+
+## API Shapes To Design Against
 
 ```ts
-type CheckoutResponse = {
-  reservation: Reservation;
-  order: Order;
+type ProductSize = {
+  id: number;
+  productId: number;
+  sizeCode: string; // example: "EU 42"
+  stockTotal: number;
+  stockAvailable: number;
+  stockReserved: number;
+  stockSold: number;
+  createdAt: string;
+  updatedAt: string;
 };
-```
 
-Behavior:
-
-- After success, no active reservation should remain.
-- Product inventory should refresh so stock sold is reflected.
-
-## Screen 6: Failure States
-
-Failure states must be designed as real UI states, not browser alerts.
-
-### Screen 6A: Sold Out During Reservation
-
-Trigger:
-
-- `POST /reservations` returns `409`.
-
-Layout:
-
-- Banner or modal over inventory.
-- Keep product context visible if possible.
-
-Content:
-
-- Title: `Sold out`
-- Message: `This pair was reserved by other buyers before your request completed.`
-- CTA: `Refresh inventory`
-- Secondary CTA: `Browse other pairs`
-
-Behavior:
-
-- Refresh products immediately.
-- Disable reserve button if `stockAvailable === 0`.
-
-### Screen 6B: Reservation Expired
-
-Trigger:
-
-- Countdown reaches zero.
-- Or checkout returns `410`.
-
-Content:
-
-- Title: `Reservation expired`
-- Message: `Your hold ended and the pair returned to available inventory.`
-- CTA: `Try again`
-- Secondary CTA: `Back to inventory`
-
-Behavior:
-
-- Clear reservation from `localStorage`.
-- Refresh products.
-- Disable checkout.
-
-### Screen 6C: Checkout Conflict
-
-Trigger:
-
-- Checkout returns `409`.
-
-Content:
-
-- Title: `Checkout unavailable`
-- Message: `This reservation can no longer be checked out.`
-- CTA: `Back to inventory`
-
-Behavior:
-
-- Fetch reservation status if needed.
-- Refresh products.
-
-### Screen 6D: Network Failure
-
-Trigger:
-
-- Any API call fails because the server is unavailable.
-
-Content:
-
-- Title: `Connection problem`
-- Message: `The drop server could not be reached.`
-- CTA: `Retry`
-
-Behavior:
-
-- Retry the failed request.
-- Keep existing UI state when possible.
-
-## Screen 7: Loading And Empty States
-
-### Loading Products
-
-Show skeleton cards with:
-
-- Image placeholder.
-- Text rows.
-- Stock badge placeholder.
-- Disabled CTA placeholder.
-
-### Empty Inventory
-
-Content:
-
-- Title: `No active drops`
-- Message: `There are no sneaker drops available right now.`
-- CTA: `Refresh`
-
-### Loading Checkout
-
-When checkout is in progress:
-
-- Disable checkout and cancel buttons.
-- Button label: `Completing checkout...`
-- Keep countdown visible.
-
-## Screen 8: Orders / Demo History
-
-Purpose:
-
-Optional demo/admin view to prove checkout creates orders.
-
-Layout:
-
-- Compact list or drawer.
-- Latest orders first.
-
-Content per order:
-
-- Order number.
-- Product ID or product name if locally matched.
-- Quantity.
-- Total price.
-- Status.
-- Created date.
-
-API:
-
-```http
-GET /orders
-GET /orders/:id
-```
-
-## API Types
-
-```ts
 type Product = {
-  id: string;
+  id: number;
   sku: string;
   slug: string;
   brand: string;
@@ -488,20 +76,22 @@ type Product = {
   priceCents: number;
   imageUrl: string | null;
   releaseAt: string | null;
-  stockTotal: number;
-  stockAvailable: number;
-  stockReserved: number;
-  stockSold: number;
+  stockTotal: number;      // aggregate across all sizes
+  stockAvailable: number;  // aggregate across all sizes
+  stockReserved: number;   // aggregate across all sizes
+  stockSold: number;       // aggregate across all sizes
+  sizes: ProductSize[];
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
 };
 
 type Reservation = {
-  id: string;
-  productId: string;
+  id: number;
+  productId: number;
   customerEmail: string | null;
   quantity: number;
+  shoeSize: string;
   status: 'active' | 'completed' | 'expired' | 'cancelled';
   expiresAt: string;
   createdAt: string;
@@ -511,12 +101,13 @@ type Reservation = {
 };
 
 type Order = {
-  id: string;
+  id: number;
   orderNumber: string;
-  reservationId: string;
-  productId: string;
+  reservationId: number;
+  productId: number;
   customerEmail: string | null;
   quantity: number;
+  shoeSize: string;
   unitPriceCents: number;
   totalPriceCents: number;
   status: 'confirmed' | 'cancelled' | 'refunded';
@@ -530,71 +121,464 @@ type CheckoutResponse = {
 };
 ```
 
-## API Client Requirements
-
-Use a typed client:
-
-```ts
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3100/api';
-```
-
-Required functions:
-
-- `getProducts(): Promise<Product[]>`
-- `createReservation(input: { productId: string; customerEmail?: string; quantity: 1 }): Promise<Reservation>`
-- `checkoutReservation(reservationId: string): Promise<CheckoutResponse>`
-- `cancelReservation(reservationId: string): Promise<Reservation>`
-- `getOrders(): Promise<Order[]>`
-
-Refresh products after:
-
-- Reservation success.
-- Reservation conflict.
-- Checkout success.
-- Checkout expiry.
-- Cancellation.
-
-## Polish UI Copy
-
-Use Polish labels in the UI. If the generator has encoding issues, ASCII fallback is acceptable.
-
-Preferred labels:
-
-- `DropLock`
-- `Limitowany drop`
-- `Dostepne pary`
-- `Zarezerwuj pare`
-- `Rezerwacja aktywna`
-- `Dokoncz checkout`
-- `Zamowienie potwierdzone`
-- `Rezerwacja wygasla`
-- `Wyprzedane`
-- `Odswiez inventory`
-
-## Final Stitch Prompt
-
-Copy this prompt into Stitch:
+Required API calls:
 
 ```txt
-Create a React + TypeScript app called DropLock for a limited sneaker drop.
+GET  /products
+POST /reservations
+POST /reservations/:id/checkout
+POST /reservations/:id/cancel
+GET  /orders
+```
 
-Use the API at http://localhost:3100/api.
+Reservation request:
 
-Build all screens from this specification:
+```json
+{
+  "productId": 1,
+  "shoeSize": "EU 42",
+  "customerEmail": "buyer@example.com",
+  "quantity": 1
+}
+```
 
-1. Entry / Live Drop screen.
-2. Full Inventory screen.
-3. Product Detail / Reserve drawer.
-4. Active Reservation / Checkout panel.
-5. Checkout Success screen.
-6. Failure states: sold out, expired reservation, checkout conflict, network failure.
-7. Loading and empty states.
-8. Optional Orders / Demo History screen.
+## Mockup 1: Live Drop / Entry
 
-The first screen must be the actual drop inventory experience, not a marketing landing page.
+Purpose:
 
-Use a premium sneaker-release visual style: clean black and white base, sharp product imagery, compact inventory badges, clear CTAs, responsive mobile bottom sheet for active reservation, and no generic SaaS dashboard look.
+Show that the drop is live and immediately expose product availability.
 
-Implement typed API calls for products, reservations, checkout, cancellation, and orders. Persist active reservation in localStorage. Refresh inventory after reservation, checkout, cancellation, conflict, and expiry.
+Desktop layout:
+
+- Sticky top nav, 64px high.
+- Left: `DROPLOCK` brand.
+- Center/right: `LIVE DROP` status pill.
+- Nav actions: `Inventory`, `Orders`, `Refresh`.
+- First viewport uses a 12-column layout:
+  - 8 columns: featured sneaker image from the first product.
+  - 4 columns: drop summary panel.
+  - bottom row: 3-4 compact allocation cards.
+
+Drop summary panel:
+
+- Title: `DROPLOCK`
+- Subtitle: `Limited sneaker reservations`
+- Metrics:
+  - total products
+  - total available pairs
+  - reserved pairs
+  - sold pairs
+- CTA: `View inventory`
+
+Product preview cards:
+
+- image
+- model
+- colorway
+- lowest available size count, e.g. `EU 42: 3 left`
+- aggregate available count
+
+Mobile layout:
+
+- Header remains fixed.
+- Featured image first.
+- Summary panel below.
+- Allocation cards as horizontal scroll or two-column grid.
+
+Prompt:
+
+```txt
+Create the DropLock Live Drop screen. Use a premium sneaker drop layout, not a marketing landing page. The first viewport must show a featured sneaker image, live status, inventory metrics, and preview product cards. Include aggregate stock and at least one visible size-level stock hint per card. Use product imagery, thin borders, black/white palette, compact CTAs, and no decorative/generative visuals.
+```
+
+## Mockup 2: Full Inventory
+
+Purpose:
+
+Let users scan all products and understand available supply across sizes.
+
+Desktop layout:
+
+- Page title: `Inventory`
+- Stats row:
+  - Products
+  - Available pairs
+  - Reserved
+  - Sold
+- Search input.
+- Toggle: `Only available`
+- Optional filter: `Size`
+- Product grid: 3 columns desktop, 2 tablet, 1 mobile.
+
+Product card:
+
+- image with fixed aspect ratio
+- status badge:
+  - `Available`
+  - `Low stock`
+  - `Sold out`
+- brand/model
+- colorway
+- price
+- aggregate stock: `12 / 20 available`
+- visible size chips:
+  - `EU 40`
+  - `EU 41`
+  - `EU 42`
+  - `EU 43`
+- each chip shows availability state:
+  - enabled if size stock > 0
+  - muted/disabled if size stock = 0
+- CTA: `Select size`
+
+UX rule:
+
+Do not let users reserve from this card without selecting a size unless a size has already been selected.
+
+Prompt:
+
+```txt
+Create the DropLock Full Inventory screen. Show a searchable and filterable sneaker inventory grid. Each product card must display aggregate stock and size chips with per-size availability. The primary action should be "Select size", not direct checkout. Sold-out sizes must be visibly disabled. Keep layout dense, readable, and responsive.
+```
+
+## Mockup 3: Product Detail + Size Selection
+
+Purpose:
+
+Let the user inspect one product and choose the exact size variant before reservation.
+
+Layout:
+
+- Desktop: right-side drawer or split detail panel.
+- Mobile: full-screen sheet.
+
+Content:
+
+- large product image
+- brand
+- model/name
+- colorway
+- SKU
+- description
+- price
+- release date
+- aggregate stock
+- size selector grid
+- email input
+- CTA: `Reserve pair`
+- secondary: `Back to inventory`
+
+Size selector:
+
+- Show all `product.sizes`.
+- Each size tile contains:
+  - size code, e.g. `EU 42`
+  - available count, e.g. `3 left`
+- Disabled when `stockAvailable === 0`.
+- Selected size has strong black border.
+- If no size selected, reserve CTA is disabled.
+
+Prompt:
+
+```txt
+Create the Product Detail and Size Selection screen for DropLock. The core interaction is selecting an available shoe size before reserving. Show a large product image, product details, price, SKU, email field, and a size grid with per-size stock counts. Disable sold-out sizes and disable the Reserve Pair button until an available size is selected.
+```
+
+## Mockup 4: Reservation Active
+
+Purpose:
+
+Make the temporary reservation visible and urgent.
+
+Desktop layout:
+
+- Persistent right panel while browsing inventory.
+- Width around 360px.
+- Does not cover product grid content.
+
+Mobile layout:
+
+- Sticky bottom sheet.
+- Countdown and checkout CTA remain visible.
+- Does not overlap text in the product card list.
+
+Panel content:
+
+- header: `Reservation active`
+- countdown from `expiresAt`
+- product thumbnail
+- product name
+- selected size, e.g. `EU 42`
+- quantity
+- price estimate
+- reservation id shortened
+- primary CTA: `Complete checkout`
+- secondary CTA: `Cancel reservation`
+
+Urgency:
+
+- under 60 seconds, countdown becomes red/urgent.
+- at 0 seconds, checkout disabled and expired failure state appears.
+
+Prompt:
+
+```txt
+Create the Active Reservation screen state for DropLock. Show a persistent reservation panel on desktop and a sticky bottom sheet on mobile. Include countdown, product thumbnail, selected shoe size, quantity, price, reservation id, Complete Checkout CTA, and Cancel Reservation CTA. The selected size must be prominent because inventory is size-specific.
+```
+
+## Mockup 5: Checkout Desktop
+
+Purpose:
+
+Complete checkout for a valid active reservation.
+
+Desktop layout:
+
+- Two-column layout:
+  - left: checkout details
+  - right: sticky order summary
+- Keep reservation timer visible in the right column.
+
+Left column:
+
+- product image
+- product name
+- colorway
+- selected size
+- reservation status
+- shipping details mock fields
+- payment method mock fields
+
+Right column:
+
+- `Reservation active`
+- countdown
+- subtotal
+- shipping
+- quantity
+- total
+- selected size
+- primary CTA: `Complete checkout`
+- secondary CTA: `Cancel reservation`
+
+UX:
+
+- This is a demo checkout, so payment fields can be prefilled/read-only.
+- No real payment provider.
+- Checkout button disabled when timer reaches zero.
+
+Prompt:
+
+```txt
+Create the DropLock Checkout Desktop screen. Use a two-column transactional layout with product and mock shipping/payment details on the left and sticky order summary on the right. Show selected shoe size, countdown timer, total price, Complete Checkout button, and Cancel Reservation button. Keep it compact and focused on finishing checkout before expiry.
+```
+
+## Mockup 6: Checkout Mobile
+
+Purpose:
+
+Make checkout usable on a narrow screen during a time-limited reservation.
+
+Mobile layout:
+
+- Header with close/back.
+- Product image and details.
+- Selected size shown near the product title.
+- Order summary list.
+- Sticky bottom checkout sheet:
+  - countdown bar
+  - payment preview
+  - total
+  - complete checkout button
+  - cancel reservation button
+
+UX:
+
+- Sticky sheet must not hide important content.
+- Buttons must fit within width.
+- Countdown remains visible at all times.
+
+Prompt:
+
+```txt
+Create the DropLock Checkout Mobile screen. It should use a compact product summary and a sticky bottom sheet containing the countdown, total, Complete Checkout CTA, and Cancel Reservation CTA. The selected shoe size must be visible in both the product summary and checkout sheet. Ensure no text or buttons overflow.
+```
+
+## Mockup 7: Checkout Success
+
+Purpose:
+
+Confirm that checkout created an order.
+
+Layout:
+
+- Focused success view, modal, or full section.
+- Not a generic receipt.
+- Should feel like the pair has been locked.
+
+Content:
+
+- success badge: `Order confirmed`
+- headline: `Your pair is locked`
+- order number
+- product thumbnail
+- product name
+- selected shoe size
+- quantity
+- total price
+- reservation status: `completed`
+- order status: `confirmed`
+- CTA: `Back to inventory`
+- secondary: `View orders`
+
+Prompt:
+
+```txt
+Create the DropLock Checkout Success screen. Confirm that the user's pair is locked. Show order number, product thumbnail, product name, selected shoe size, quantity, total price, reservation status completed, and order status confirmed. Provide Back to Inventory and View Orders actions.
+```
+
+## Mockup 8: Failure - Sold Out / Size Unavailable
+
+Purpose:
+
+Handle race condition failure cleanly.
+
+Trigger:
+
+- `POST /reservations` returns `409`.
+- Another user reserved the last pair in the selected size.
+
+Content:
+
+- title: `Size sold out`
+- message: `This size was reserved by another buyer before your request completed.`
+- show product name and selected size
+- CTA: `Choose another size`
+- secondary: `Refresh inventory`
+
+Behavior:
+
+- Refresh product data.
+- Disable the sold-out size chip.
+- Keep product detail context visible.
+
+Prompt:
+
+```txt
+Create the DropLock Size Sold Out failure state. This state appears when the selected shoe size is no longer available because another user reserved it first. Show product context, selected size, clear error message, Choose Another Size CTA, and Refresh Inventory secondary action.
+```
+
+## Mockup 9: Failure - Reservation Expired
+
+Purpose:
+
+Handle checkout after the reservation timer expires.
+
+Trigger:
+
+- countdown reaches zero
+- checkout returns `410`
+
+Content:
+
+- title: `Reservation expired`
+- message: `Your hold ended and the pair returned to inventory.`
+- product name
+- selected size
+- CTA: `Try again`
+- secondary: `Back to inventory`
+
+Behavior:
+
+- Clear active reservation.
+- Refresh inventory.
+- Disable checkout.
+
+Prompt:
+
+```txt
+Create the DropLock Reservation Expired screen. Show that the timer ended, the selected size returned to inventory, and checkout is no longer available. Include product name, selected shoe size, Try Again CTA, and Back to Inventory secondary action.
+```
+
+## Mockup 10: Loading / Empty / Network Error
+
+Purpose:
+
+Make non-happy paths predictable.
+
+States:
+
+- inventory loading skeleton
+- product detail loading skeleton
+- checkout processing state
+- empty inventory
+- network error
+
+Rules:
+
+- No browser alerts.
+- Use in-app banners or compact empty states.
+- Retry action must be visible.
+- Checkout loading keeps countdown visible.
+
+Prompt:
+
+```txt
+Create DropLock loading, empty, and network error states. Include inventory skeleton cards, empty inventory state, checkout processing state with countdown still visible, and network error with Retry CTA. Keep layout stable so content does not jump.
+```
+
+## Mockup 11: Orders History
+
+Purpose:
+
+Demo/admin proof that checkout creates orders.
+
+Layout:
+
+- Compact list or side drawer.
+- Latest orders first.
+
+Order row:
+
+- order number
+- product name
+- selected shoe size
+- quantity
+- total price
+- status
+- created date
+
+Prompt:
+
+```txt
+Create the DropLock Orders History screen. Show a compact list of confirmed orders with order number, product name, selected shoe size, quantity, total price, status, and date. This screen is secondary and should not distract from the main reservation flow.
+```
+
+## Final Combined Stitch Prompt
+
+```txt
+Create complete mockups for a React + TypeScript app called DropLock.
+
+DropLock is a limited sneaker drop reservation app. The backend API is http://localhost:3100/api.
+
+Do not create a marketing landing page. Do not use generative illustrations or decorative generated assets. Use product images from the API or neutral image placeholders.
+
+The crucial UX rule is that every product has size-specific inventory. Users must select an available shoe size before reservation. Sold-out sizes must be disabled. Race-condition failures should explain that the selected size sold out.
+
+Create these screens:
+1. Live Drop / Entry
+2. Full Inventory
+3. Product Detail + Size Selection
+4. Reservation Active
+5. Checkout Desktop
+6. Checkout Mobile
+7. Checkout Success
+8. Failure: Sold Out / Size Unavailable
+9. Failure: Reservation Expired
+10. Loading / Empty / Network Error
+11. Orders History
+
+Use a premium sneaker-release UI: compact, sharp, black and near-white, thin borders, strong product imagery, high contrast CTAs, clear status badges, responsive layout, no nested cards, no oversized hero-only page, no generic SaaS dashboard styling.
+
+Design against these API fields: Product has sizes: ProductSize[]. Reservation and Order both contain shoeSize. Reservation request requires numeric productId, shoeSize, quantity 1, and optional customerEmail.
 ```

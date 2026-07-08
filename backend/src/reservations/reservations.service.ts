@@ -16,10 +16,19 @@ import { OrdersRepository } from '../orders/orders.repository';
 import { ProductsRepository } from '../products/products.repository';
 import {
   optionalEmail,
+  parsePositiveInteger,
   requirePositiveInteger,
   requireString,
 } from '../shared/validation';
-import { CreateReservationBody, ListReservationsQuery } from './dto';
+import {
+  FOOTWEAR_SIZES,
+  isFootwearSize,
+} from '../shared/footwear-sizes';
+import {
+  CheckoutReservationBody,
+  CreateReservationBody,
+  ListReservationsQuery,
+} from './dto';
 import {
   CheckoutResult,
   mapReservation,
@@ -69,14 +78,16 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
   async list(query: ListReservationsQuery): Promise<Reservation[]> {
     const status = query.status ? parseStatus(query.status) : undefined;
     const rows = await this.reservationsRepository.list({
-      productId: query.productId,
+      productId: query.productId
+        ? parsePositiveInteger(query.productId, 'productId')
+        : undefined,
       status,
     });
 
     return rows.map(mapReservation);
   }
 
-  async findById(id: string): Promise<Reservation> {
+  async findById(id: string | number): Promise<Reservation> {
     const row = await this.reservationsRepository.findById(id);
 
     if (!row) {
@@ -87,13 +98,14 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async create(body: CreateReservationBody): Promise<Reservation> {
-    const productId = requireString(body.productId, 'productId');
+    const productId = requirePositiveInteger(body.productId, 'productId');
     const quantity =
       body.quantity === undefined
         ? 1
         : requirePositiveInteger(body.quantity, 'quantity');
     const customerEmail = optionalEmail(body.customerEmail);
-    const ttlSeconds = Number(process.env.RESERVATION_TTL_SECONDS ?? 600);
+    const shoeSize = requireShoeSize(body.shoeSize);
+    const ttlSeconds = Number(process.env.RESERVATION_TTL_SECONDS ?? 300);
 
     if (ttlSeconds <= 0) {
       throw new BadRequestException('RESERVATION_TTL_SECONDS must be positive.');
@@ -105,6 +117,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
       const product = await this.productsRepository.reserveStock(
         client,
         productId,
+        shoeSize,
         quantity,
       );
 
@@ -117,6 +130,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
         productId,
         customerEmail,
         quantity,
+        shoeSize,
         expiresAt,
       });
 
@@ -124,7 +138,16 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async checkout(id: string): Promise<CheckoutResult> {
+  async checkout(
+    id: string | number,
+    body: CheckoutReservationBody,
+  ): Promise<CheckoutResult> {
+    const checkoutDetails = parseCheckoutDetails(body);
+    const shippingCents = parseNonNegativeEnvironmentInteger(
+      process.env.SHIPPING_CENTS,
+      3500,
+      'SHIPPING_CENTS',
+    );
     const result = await this.database.transaction(async (client) => {
       const reservation = await this.reservationsRepository.findByIdForUpdate(
         client,
@@ -146,6 +169,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
         const stockMoved = await this.reservationsRepository.moveReservedToAvailable(
           client,
           reservation.product_id,
+          reservation.shoe_size,
           reservation.quantity,
         );
 
@@ -163,6 +187,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
       const product = await this.reservationsRepository.moveReservedToSold(
         client,
         reservation.product_id,
+        reservation.shoe_size,
         reservation.quantity,
       );
 
@@ -176,7 +201,10 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
         productId: reservation.product_id,
         customerEmail: reservation.customer_email,
         quantity: reservation.quantity,
+        shoeSize: reservation.shoe_size,
         unitPriceCents: product.price_cents,
+        shippingCents,
+        ...checkoutDetails,
       });
 
       return {
@@ -199,7 +227,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async cancel(id: string): Promise<Reservation> {
+  async cancel(id: string | number): Promise<Reservation> {
     const result = await this.database.transaction(async (client) => {
       const reservation = await this.reservationsRepository.findByIdForUpdate(
         client,
@@ -221,6 +249,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
         const stockMoved = await this.reservationsRepository.moveReservedToAvailable(
           client,
           reservation.product_id,
+          reservation.shoe_size,
           reservation.quantity,
         );
 
@@ -238,6 +267,7 @@ export class ReservationsService implements OnModuleInit, OnModuleDestroy {
       const stockMoved = await this.reservationsRepository.moveReservedToAvailable(
         client,
         reservation.product_id,
+        reservation.shoe_size,
         reservation.quantity,
       );
 
@@ -287,4 +317,40 @@ function parseStatus(status: string): ReservationStatus {
 
 function buildOrderNumber(): string {
   return `ORD-${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+}
+
+function requireShoeSize(value: unknown): string {
+  const shoeSize = requireString(value, 'shoeSize');
+
+  if (!isFootwearSize(shoeSize)) {
+    throw new BadRequestException(`shoeSize must be one of ${FOOTWEAR_SIZES.join(', ')}.`);
+  }
+
+  return shoeSize;
+}
+
+function parseCheckoutDetails(body: CheckoutReservationBody) {
+  return {
+    firstName: requireString(body.firstName, 'firstName'),
+    lastName: requireString(body.lastName, 'lastName'),
+    shippingAddress: requireString(body.shippingAddress, 'shippingAddress'),
+    shippingCity: requireString(body.shippingCity, 'shippingCity'),
+    shippingPostalCode: requireString(
+      body.shippingPostalCode,
+      'shippingPostalCode',
+    ),
+    paymentReference: requireString(body.paymentReference, 'paymentReference'),
+  };
+}
+
+function parseNonNegativeEnvironmentInteger(
+  value: string | undefined,
+  fallback: number,
+  name: string,
+): number {
+  const parsed = value === undefined ? fallback : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new BadRequestException(`${name} must be a non-negative integer.`);
+  }
+  return parsed;
 }

@@ -9,6 +9,7 @@ export interface CreateProductBody {
   imageUrl?: unknown;
   releaseAt?: unknown;
   stockTotal?: unknown;
+  sizes?: unknown;
 }
 
 export interface UpdateProductBody {
@@ -21,4 +22,13 @@ export interface UpdateProductBody {
   priceCents?: unknown;
   imageUrl?: unknown;
   releaseAt?: unknown;
+}
+
+export interface CreateProductSizeBody {
+  sizeCode?: unknown;
+  stockTotal?: unknown;
+}
+
+export interface UpdateProductSizeBody {
+  stockTotal?: unknown;
 }

@@ -5,9 +5,10 @@ import { SqlExecutor } from '../shared/sql-executor';
 import { ReservationRow, ReservationStatus } from './reservation.types';
 
 export interface CreateReservationData {
-  productId: string;
+  productId: number;
   customerEmail: string | null;
   quantity: number;
+  shoeSize: string;
   expiresAt: Date;
 }
 
@@ -19,7 +20,7 @@ export class ReservationsRepository {
   ) {}
 
   async list(filters: {
-    productId?: string;
+    productId?: number;
     status?: ReservationStatus;
   }): Promise<ReservationRow[]> {
     const conditions: string[] = [];
@@ -52,7 +53,7 @@ export class ReservationsRepository {
     return result.rows;
   }
 
-  async findById(id: string): Promise<ReservationRow | null> {
+  async findById(id: string | number): Promise<ReservationRow | null> {
     const result = await this.database.query<ReservationRow>(
       `
         SELECT *
@@ -67,7 +68,7 @@ export class ReservationsRepository {
 
   async findByIdForUpdate(
     executor: SqlExecutor,
-    id: string,
+    id: string | number,
   ): Promise<ReservationRow | null> {
     const result = await executor.query<ReservationRow>(
       `
@@ -92,13 +93,20 @@ export class ReservationsRepository {
           product_id,
           customer_email,
           quantity,
+          shoe_size,
           status,
           expires_at
         )
-        VALUES ($1, $2, $3, 'active', $4)
+        VALUES ($1, $2, $3, $4, 'active', $5)
         RETURNING *
       `,
-      [data.productId, data.customerEmail, data.quantity, data.expiresAt],
+      [
+        data.productId,
+        data.customerEmail,
+        data.quantity,
+        data.shoeSize,
+        data.expiresAt,
+      ],
     );
 
     return result.rows[0];
@@ -106,7 +114,7 @@ export class ReservationsRepository {
 
   async complete(
     executor: SqlExecutor,
-    id: string,
+    id: string | number,
   ): Promise<ReservationRow> {
     const result = await executor.query<ReservationRow>(
       `
@@ -123,7 +131,7 @@ export class ReservationsRepository {
     return result.rows[0];
   }
 
-  async cancel(executor: SqlExecutor, id: string): Promise<ReservationRow> {
+  async cancel(executor: SqlExecutor, id: string | number): Promise<ReservationRow> {
     const result = await executor.query<ReservationRow>(
       `
         UPDATE reservations
@@ -139,7 +147,7 @@ export class ReservationsRepository {
     return result.rows[0];
   }
 
-  async expireOne(executor: SqlExecutor, id: string): Promise<ReservationRow> {
+  async expireOne(executor: SqlExecutor, id: string | number): Promise<ReservationRow> {
     const result = await executor.query<ReservationRow>(
       `
         UPDATE reservations
@@ -156,9 +164,28 @@ export class ReservationsRepository {
 
   async moveReservedToSold(
     executor: SqlExecutor,
-    productId: string,
+    productId: string | number,
+    shoeSize: string,
     quantity: number,
   ): Promise<ProductRow | null> {
+    const sizeResult = await executor.query(
+      `
+        UPDATE product_sizes
+        SET stock_reserved = stock_reserved - $3,
+            stock_sold = stock_sold + $3,
+            updated_at = now()
+        WHERE product_id = $1
+          AND size_code = $2
+          AND stock_reserved >= $3
+        RETURNING id
+      `,
+      [productId, shoeSize, quantity],
+    );
+
+    if (!sizeResult.rows[0]) {
+      return null;
+    }
+
     const result = await executor.query<ProductRow>(
       `
         UPDATE products
@@ -177,9 +204,28 @@ export class ReservationsRepository {
 
   async moveReservedToAvailable(
     executor: SqlExecutor,
-    productId: string,
+    productId: string | number,
+    shoeSize: string,
     quantity: number,
   ): Promise<boolean> {
+    const sizeResult = await executor.query(
+      `
+        UPDATE product_sizes
+        SET stock_reserved = stock_reserved - $3,
+            stock_available = stock_available + $3,
+            updated_at = now()
+        WHERE product_id = $1
+          AND size_code = $2
+          AND stock_reserved >= $3
+        RETURNING id
+      `,
+      [productId, shoeSize, quantity],
+    );
+
+    if (sizeResult.rowCount !== 1) {
+      return false;
+    }
+
     const result = await executor.query(
       `
         UPDATE products
@@ -204,24 +250,39 @@ export class ReservationsRepository {
               updated_at = now()
           WHERE status = 'active'
             AND expires_at <= now()
-          RETURNING product_id, quantity
+          RETURNING product_id, shoe_size, quantity
         ),
         grouped AS (
-          SELECT product_id, sum(quantity)::integer AS quantity
+          SELECT product_id, shoe_size, sum(quantity)::integer AS quantity
           FROM expired
-          GROUP BY product_id
+          GROUP BY product_id, shoe_size
         ),
-        restored AS (
-          UPDATE products p
+        restored_sizes AS (
+          UPDATE product_sizes ps
           SET stock_available = stock_available + g.quantity,
               stock_reserved = stock_reserved - g.quantity,
               updated_at = now()
           FROM grouped g
+          WHERE ps.product_id = g.product_id
+            AND ps.size_code = g.shoe_size
+          RETURNING g.product_id, g.quantity
+        ),
+        product_grouped AS (
+          SELECT product_id, sum(quantity)::integer AS quantity
+          FROM grouped
+          GROUP BY product_id
+        ),
+        restored_products AS (
+          UPDATE products p
+          SET stock_available = stock_available + g.quantity,
+              stock_reserved = stock_reserved - g.quantity,
+              updated_at = now()
+          FROM product_grouped g
           WHERE p.id = g.product_id
           RETURNING g.quantity
         )
         SELECT COALESCE(sum(quantity), 0)::text AS expired_count
-        FROM restored
+        FROM restored_products
       `,
     );
 
