@@ -98,23 +98,64 @@ export function CheckoutPage() {
           <div className="form-grid">
             <label>
               <span>First name</span>
-              <input name="firstName" required autoComplete="given-name" />
+              <input
+                name="firstName"
+                required
+                autoComplete="given-name"
+                pattern="[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+(?:[ '-][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)*"
+                minLength={2}
+                maxLength={50}
+                title="Use letters, spaces, apostrophes or hyphens."
+              />
             </label>
             <label>
               <span>Last name</span>
-              <input name="lastName" required autoComplete="family-name" />
+              <input
+                name="lastName"
+                required
+                autoComplete="family-name"
+                pattern="[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+(?:[ '-][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)*"
+                minLength={2}
+                maxLength={50}
+                title="Use letters, spaces, apostrophes or hyphens."
+              />
             </label>
             <label className="wide">
               <span>Address</span>
-              <input name="shippingAddress" required autoComplete="street-address" />
+              <input
+                name="shippingAddress"
+                required
+                autoComplete="street-address"
+                pattern="[A-Za-z0-9ĄĆĘŁŃÓŚŹŻąćęłńóśźż][A-Za-z0-9ĄĆĘŁŃÓŚŹŻąćęłńóśźż .,'/-]{2,99}"
+                maxLength={100}
+                title="Enter a valid street address (3–100 characters)."
+              />
             </label>
             <label>
               <span>City</span>
-              <input name="shippingCity" required autoComplete="address-level2" />
+              <input
+                name="shippingCity"
+                required
+                autoComplete="address-level2"
+                pattern="[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+(?:[ '-][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)*"
+                minLength={2}
+                maxLength={60}
+                title="Use letters, spaces, apostrophes or hyphens."
+              />
             </label>
             <label>
               <span>Postal code</span>
-              <input name="shippingPostalCode" required autoComplete="postal-code" />
+              <input
+                name="shippingPostalCode"
+                required
+                autoComplete="postal-code"
+                inputMode="numeric"
+                pattern="[0-9]{2}-[0-9]{3}"
+                maxLength={6}
+                placeholder="00-000"
+                title="Use the Polish postal code format: 00-000."
+                onInput={(event) => formatPostalCode(event.currentTarget)}
+              />
             </label>
           </div>
         </section>
@@ -132,11 +173,25 @@ export function CheckoutPage() {
                 inputMode="numeric"
                 autoComplete="cc-number"
                 placeholder="0000 0000 0000 0000"
+                pattern="[0-9]{4}(?: [0-9]{4}){3}"
+                maxLength={19}
+                title="Enter a 16 digit card number."
+                onInput={(event) => formatCardNumber(event.currentTarget)}
               />
             </label>
             <label>
               <span>Expiry</span>
-              <input name="cardExpiry" required autoComplete="cc-exp" placeholder="MM / YY" />
+              <input
+                name="cardExpiry"
+                required
+                autoComplete="cc-exp"
+                inputMode="numeric"
+                placeholder="MM/YY"
+                pattern="(?:0[1-9]|1[0-2])/[0-9]{2}"
+                maxLength={5}
+                title="Use the MM/YY format with a valid month."
+                onInput={(event) => formatCardExpiry(event.currentTarget)}
+              />
             </label>
             <label>
               <span>CVC</span>
@@ -146,6 +201,10 @@ export function CheckoutPage() {
                 inputMode="numeric"
                 autoComplete="cc-csc"
                 placeholder="000"
+                pattern="[0-9]{3,4}"
+                minLength={3}
+                maxLength={4}
+                title="Enter the 3 or 4 digit security code."
               />
             </label>
           </div>
@@ -198,4 +257,26 @@ export function CheckoutPage() {
       </aside>
     </section>
   );
+}
+
+function digitsOnly(input: HTMLInputElement, maxLength: number): string {
+  return input.value.replace(/\D/g, '').slice(0, maxLength);
+}
+
+function formatCardNumber(input: HTMLInputElement) {
+  input.value = digitsOnly(input, 16).replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+
+function formatCardExpiry(input: HTMLInputElement) {
+  const digits = digitsOnly(input, 4);
+  input.value = digits.length > 2
+    ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+    : digits;
+}
+
+function formatPostalCode(input: HTMLInputElement) {
+  const digits = digitsOnly(input, 5);
+  input.value = digits.length > 2
+    ? `${digits.slice(0, 2)}-${digits.slice(2)}`
+    : digits;
 }
