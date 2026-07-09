@@ -2360,23 +2360,23 @@ footer nav {
 .success-main::before {
   position: absolute;
   z-index: -1;
-  inset: 10% 8%;
+  inset: 3%;
   content: '';
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.12);
-  filter: blur(110px);
+  background: rgba(255, 255, 255, 0.26);
+  filter: blur(82px);
   animation: success-background-pulse 4.5s ease-in-out infinite;
 }
 
 @keyframes success-background-pulse {
   0%,
   100% {
-    opacity: 0.38;
-    transform: scale(0.94);
+    opacity: 0.58;
+    transform: scale(0.96);
   }
   50% {
-    opacity: 0.92;
-    transform: scale(1.06);
+    opacity: 1;
+    transform: scale(1.04);
   }
 }
 
