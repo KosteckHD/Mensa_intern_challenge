@@ -35,7 +35,7 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
   await page
     .getByRole('textbox', { name: 'Reservation email' })
     .fill('full-stack@example.com');
-  await page.getByRole('button', { name: /Reserve pair/ }).click();
+  await page.getByRole('button', { name: /Reserve now/ }).click();
 
   await expect(page).toHaveURL(/\/checkout\/\d+$/);
 

@@ -21,7 +21,7 @@ test.describe('DropLock customer journey', () => {
     await page
       .getByRole('textbox', { name: 'Reservation email' })
       .fill('buyer@example.com');
-    await page.getByRole('button', { name: /Reserve pair/ }).click();
+    await page.getByRole('button', { name: /Reserve now/ }).click();
 
     await expectReservationPayload(capture);
     await expect(page).toHaveURL(/\/checkout\/101$/);
@@ -45,7 +45,7 @@ test.describe('DropLock customer journey', () => {
 
     await page.goto('/products/1');
     await page.getByRole('button', { name: /^42/ }).click();
-    await page.getByRole('button', { name: /Reserve pair/ }).click();
+    await page.getByRole('button', { name: /Reserve now/ }).click();
 
     await expect(page).toHaveURL(/\/errors\/sold-out$/);
     await expect(
@@ -55,6 +55,23 @@ test.describe('DropLock customer journey', () => {
 
     await page.getByRole('button', { name: /Choose another size/ }).click();
     await expect(page).toHaveURL(/\/products\/1$/);
+  });
+
+  test('loads a product directly when it is absent from the catalog response', async ({
+    page,
+  }) => {
+    await installApiMock(page, { products: [] });
+
+    await page.goto('/products/1');
+
+    await expect(
+      page.getByRole('heading', { name: 'Off-White x Dunk Low' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'No active drops' }),
+    ).not.toBeVisible();
+    await expect(page.getByRole('button', { name: /^42/ })).toBeEnabled();
+    await expect(page.getByRole('button', { name: /Reserve now/ })).toBeEnabled();
   });
 
   test('shows reservation-expired recovery when checkout returns 410', async ({

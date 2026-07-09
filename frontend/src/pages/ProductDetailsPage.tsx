@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EmptyProducts, LoadingProducts } from '../components/SystemState';
+import { droplockApi } from '../api/droplockApi';
+import { LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import {
   formatPrice,
@@ -8,32 +9,91 @@ import {
   selectedSizeStock,
 } from '../lib/format';
 import { imageFor } from '../lib/images';
+import { Product } from '../types/api';
 
 export function ProductDetailsPage() {
   const { productId } = useParams();
-  const { products, loadingProducts, refreshProducts, reserve } = useDrop();
+  const productIdNumber = Number(productId);
+  const { products, loadingProducts, reserve } = useDrop();
   const navigate = useNavigate();
-  const product = products.find((item) => item.id === Number(productId)) ?? null;
+  const listedProduct =
+    products.find((item) => item.id === productIdNumber) ?? null;
+  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [shoeSize, setShoeSize] = useState('');
   const [email, setEmail] = useState('');
   const [reserving, setReserving] = useState(false);
+  const product = listedProduct ?? fetchedProduct;
+
+  useEffect(() => {
+    if (!Number.isInteger(productIdNumber) || productIdNumber <= 0) {
+      setNotFound(true);
+      setLoadingDetail(false);
+      return;
+    }
+
+    if (listedProduct) {
+      setNotFound(false);
+      setLoadingDetail(false);
+      return;
+    }
+
+    let active = true;
+    setLoadingDetail(true);
+
+    void droplockApi
+      .getProduct(productIdNumber)
+      .then((result) => {
+        if (!active) return;
+        setFetchedProduct(result);
+        setNotFound(false);
+      })
+      .catch(() => {
+        if (active) setNotFound(true);
+      })
+      .finally(() => {
+        if (active) setLoadingDetail(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [listedProduct, productIdNumber]);
 
   useEffect(() => {
     if (product && !shoeSize) setShoeSize(getDefaultSize(product));
   }, [product, shoeSize]);
 
-  if (loadingProducts) return <LoadingProducts />;
-  if (!product) {
-    return <EmptyProducts onRefresh={() => void refreshProducts()} />;
+  if ((loadingProducts && !product) || loadingDetail) return <LoadingProducts />;
+
+  if (!product || notFound) {
+    return (
+      <section className="product-missing">
+        <p className="kicker">Product unavailable</p>
+        <h1>This product could not be found.</h1>
+        <p>It may have been removed from the current drop.</p>
+        <button className="primary-button" onClick={() => navigate('/products')}>
+          Back to products
+        </button>
+      </section>
+    );
   }
 
   const selectedStock = selectedSizeStock(product, shoeSize);
+  const releaseDate = product.releaseAt
+    ? new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(product.releaseAt))
+    : 'TBA';
 
   async function submitReservation() {
-    if (!shoeSize) return;
+    if (!shoeSize || !product) return;
     setReserving(true);
     try {
-      const created = await reserve(product!, shoeSize, email);
+      const created = await reserve(product, shoeSize, email);
       navigate(`/checkout/${created.id}`);
     } catch {
       // The context maps API failures to dedicated error routes.
@@ -43,88 +103,128 @@ export function ProductDetailsPage() {
   }
 
   return (
-    <section className="product-detail">
-      <div className="product-detail-bar">
-        <div>
-          <strong>Product details</strong>
-          <span>SKU: {product.sku}</span>
+    <section className="product-showcase">
+      <button className="product-back" onClick={() => navigate('/products')}>
+        <span aria-hidden="true">&larr;</span> Products
+      </button>
+
+      <div className="product-showcase-grid">
+        <div className="product-gallery">
+          <div className="product-main-image">
+            <span className="scan-line" aria-hidden="true" />
+            <img src={imageFor(product)} alt={product.name} />
+            <div className="product-reference">
+              <span>REF: {product.sku}</span>
+              <span>DROP ID: {String(product.id).padStart(6, '0')}</span>
+            </div>
+          </div>
+          <div className="product-image-strip" aria-label="Product image">
+            <button className="active" aria-label="Show main product image">
+              <img src={imageFor(product)} alt="" />
+            </button>
+          </div>
         </div>
-        <button onClick={() => navigate('/products')} aria-label="Close product details">
-          ×
-        </button>
-      </div>
-      <div className="detail-media">
-        <img src={imageFor(product)} alt={product.name} />
-        <span className="image-code">IMG_0{product.id} / DROP</span>
-      </div>
-      <div className="detail-panel">
-        <div className="detail-heading">
-          <div>
-            <p className="kicker">Live drop</p>
+
+        <div className="product-information">
+          <header className="product-identity">
+            <div className="product-status-line">
+              <span className="live-status"><i /> Live drop</span>
+              <span>ID: {String(product.id).padStart(6, '0')}</span>
+            </div>
+            <p className="product-brand">{product.brand}</p>
             <h1>{product.name}</h1>
-            <p>{product.colorway}</p>
+            <strong>{formatPrice(product.priceCents)}</strong>
+          </header>
+
+          <dl className="product-specification">
+            <div><dt>SKU</dt><dd>{product.sku}</dd></div>
+            <div><dt>Colorway</dt><dd>{product.colorway}</dd></div>
+            <div><dt>Release date</dt><dd>{releaseDate}</dd></div>
+            <div><dt>Available</dt><dd>{product.stockAvailable} pairs</dd></div>
+          </dl>
+
+          <fieldset className="showcase-size-picker">
+            <legend>
+              <span>Select size (EU)</span>
+              <small>Supply is tracked per size</small>
+            </legend>
+            <div>
+              {product.sizes.map((size) => {
+                const unavailable = size.stockAvailable === 0;
+                return (
+                  <button
+                    type="button"
+                    key={size.id}
+                    className={shoeSize === size.sizeCode ? 'selected' : ''}
+                    disabled={unavailable}
+                    onClick={() => setShoeSize(size.sizeCode)}
+                    aria-label={`${size.sizeCode.replace(/^EU\s*/i, '')}, ${
+                      unavailable
+                        ? 'sold out'
+                        : `${size.stockAvailable} available`
+                    }`}
+                  >
+                    <strong>{size.sizeCode.replace(/^EU\s*/i, '')}</strong>
+                    {unavailable ? (
+                      <small>Out</small>
+                    ) : size.stockAvailable <= 3 ? (
+                      <small>Low: {size.stockAvailable}</small>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <label className="showcase-email">
+            <span>Reservation email <small>Optional</small></span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@example.com"
+              autoComplete="email"
+            />
+          </label>
+
+          <div className="reservation-window">
+            <div>
+              <span>Reservation hold after confirmation</span>
+              <strong>05:00</strong>
+            </div>
+            <p>
+              Selected: <strong>{shoeSize || 'Choose a size'}</strong>
+              {shoeSize && ` / ${selectedStock} available`}
+            </p>
           </div>
-          <strong className="detail-price">{formatPrice(product.priceCents)}</strong>
-        </div>
-        <div className="aggregate">
-          <span>SKU: {product.sku}</span>
-          <span>AGGREGATE: {product.stockAvailable} PAIRS</span>
-        </div>
-        <fieldset className="size-picker">
-          <legend>Select size (EU)</legend>
-          <div>
-            {product.sizes.map((size) => {
-              const unavailable = size.stockAvailable === 0;
-              return (
-                <button
-                  type="button"
-                  key={size.id}
-                  className={shoeSize === size.sizeCode ? 'selected' : ''}
-                  disabled={unavailable}
-                  onClick={() => setShoeSize(size.sizeCode)}
-                >
-                  <strong>{size.sizeCode.replace(/^EU\s*/i, '')}</strong>
-                  <small>
-                    {unavailable
-                      ? 'OUT'
-                      : size.stockAvailable <= 5
-                        ? `${size.stockAvailable} LEFT`
-                        : 'READY'}
-                  </small>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-        <label className="input-field">
-          <span>Reservation email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="name@example.com"
-          />
-        </label>
-        <div className="reserve-block">
-          <p>Reservation guaranteed for 5 minutes</p>
-          <div className="reserve-actions">
-            <button
-              className="secondary-button"
-              onClick={() => navigate('/products')}
-            >
-              ← Back
-            </button>
-            <button
-              className="primary-button"
-              disabled={!shoeSize || selectedStock === 0 || reserving}
-              onClick={() => void submitReservation()}
-            >
-              {reserving ? 'Securing allocation...' : 'Reserve pair'}
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
+
+          <button
+            className="showcase-reserve"
+            disabled={!shoeSize || selectedStock === 0 || reserving}
+            onClick={() => void submitReservation()}
+          >
+            {reserving ? 'Securing allocation...' : 'Reserve now'}
+          </button>
+          <p className="secure-note">Inventory is locked atomically at reservation.</p>
         </div>
       </div>
+
+      <section className="product-notes">
+        <article>
+          <h2>Product details</h2>
+          <p>
+            {product.description ??
+              'A limited sneaker release available while size-specific inventory lasts.'}
+          </p>
+        </article>
+        <article>
+          <h2>Reservation and checkout</h2>
+          <p>
+            A successful reservation holds one pair in the selected size for
+            five minutes. Unpaid reservations return automatically to inventory.
+          </p>
+        </article>
+      </section>
     </section>
   );
 }
