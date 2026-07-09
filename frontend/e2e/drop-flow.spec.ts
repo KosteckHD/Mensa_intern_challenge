@@ -74,6 +74,25 @@ test.describe('DropLock customer journey', () => {
     await expect(page.getByRole('button', { name: /Reserve now/ })).toBeEnabled();
   });
 
+  test('keeps the clicked product visible when its refresh request fails', async ({
+    page,
+  }) => {
+    await installApiMock(page, { productDetailStatus: 503 });
+
+    await page.goto('/products');
+    await page
+      .getByRole('button', { name: 'View details for Off-White x Dunk Low' })
+      .click();
+
+    await expect(page).toHaveURL(/\/products\/1$/);
+    await expect(
+      page.getByRole('heading', { name: 'Off-White x Dunk Low' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'This product could not be found.' }),
+    ).not.toBeVisible();
+  });
+
   test('shows reservation-expired recovery when checkout returns 410', async ({
     page,
   }) => {

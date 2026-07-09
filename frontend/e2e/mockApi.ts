@@ -68,6 +68,7 @@ export const order = {
 type MockOptions = {
   products?: typeof product[];
   holdProducts?: boolean;
+  productDetailStatus?: number;
   reservationStatus?: number;
   checkoutStatus?: number;
 };
@@ -106,6 +107,13 @@ export async function installApiMock(
     }
 
     if (method === 'GET' && path === '/api/products/1') {
+      if (options.productDetailStatus && options.productDetailStatus !== 200) {
+        await json(route, options.productDetailStatus, {
+          statusCode: options.productDetailStatus,
+          message: 'Product lookup failed',
+        });
+        return;
+      }
       await json(route, 200, product);
       return;
     }

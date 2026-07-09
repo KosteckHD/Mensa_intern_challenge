@@ -176,7 +176,9 @@ export function ProductsPage() {
             <ProductCard
               key={product.id}
               product={product}
-              onOpen={() => navigate(`/products/${product.id}`)}
+              onOpen={() =>
+                navigate(`/products/${product.id}`, { state: { product } })
+              }
             />
           ))}
         </section>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { droplockApi } from '../api/droplockApi';
 import { LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
@@ -16,31 +16,39 @@ export function ProductDetailsPage() {
   const productIdNumber = Number(productId);
   const { products, loadingProducts, reserve } = useDrop();
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationProduct = readNavigationProduct(
+    location.state,
+    productIdNumber,
+  );
   const listedProduct =
-    products.find((item) => item.id === productIdNumber) ?? null;
-  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(true);
+    products.find((item) => String(item.id) === String(productId)) ?? null;
+  const cachedProduct = listedProduct ?? navigationProduct;
+  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(
+    cachedProduct,
+  );
+  const [loadingDetail, setLoadingDetail] = useState(!cachedProduct);
   const [notFound, setNotFound] = useState(false);
   const [shoeSize, setShoeSize] = useState('');
   const [email, setEmail] = useState('');
   const [reserving, setReserving] = useState(false);
-  const product = listedProduct ?? fetchedProduct;
+  const product =
+    fetchedProduct?.id === productIdNumber
+      ? fetchedProduct
+      : cachedProduct;
 
   useEffect(() => {
     if (!Number.isInteger(productIdNumber) || productIdNumber <= 0) {
+      setFetchedProduct(null);
       setNotFound(true);
       setLoadingDetail(false);
       return;
     }
 
-    if (listedProduct) {
-      setNotFound(false);
-      setLoadingDetail(false);
-      return;
-    }
-
     let active = true;
-    setLoadingDetail(true);
+    setFetchedProduct(cachedProduct);
+    setNotFound(false);
+    setLoadingDetail(!cachedProduct);
 
     void droplockApi
       .getProduct(productIdNumber)
@@ -50,7 +58,7 @@ export function ProductDetailsPage() {
         setNotFound(false);
       })
       .catch(() => {
-        if (active) setNotFound(true);
+        if (active) setNotFound(!cachedProduct);
       })
       .finally(() => {
         if (active) setLoadingDetail(false);
@@ -59,7 +67,7 @@ export function ProductDetailsPage() {
     return () => {
       active = false;
     };
-  }, [listedProduct, productIdNumber]);
+  }, [cachedProduct, productIdNumber]);
 
   useEffect(() => {
     if (product && !shoeSize) setShoeSize(getDefaultSize(product));
@@ -227,4 +235,16 @@ export function ProductDetailsPage() {
       </section>
     </section>
   );
+}
+
+function readNavigationProduct(
+  state: unknown,
+  productId: number,
+): Product | null {
+  if (!state || typeof state !== 'object' || !('product' in state)) {
+    return null;
+  }
+
+  const candidate = (state as { product?: Product }).product;
+  return candidate && Number(candidate.id) === productId ? candidate : null;
 }

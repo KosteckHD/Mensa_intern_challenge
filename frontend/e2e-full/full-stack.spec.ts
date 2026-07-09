@@ -8,12 +8,13 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
   request,
 }) => {
   const suffix = randomUUID();
+  const productName = `Browser Drop ${suffix.slice(0, 8)}`;
   const createdResponse = await request.post(`${apiBaseUrl}/products`, {
     data: {
       sku: `BROWSER-E2E-${suffix}`,
       brand: 'Nike',
       model: 'Dunk Low',
-      name: 'Browser Full Stack Drop',
+      name: productName,
       colorway: 'Black/White',
       priceCents: 54900,
       imageUrl:
@@ -27,9 +28,13 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
   expect(createdResponse.ok()).toBeTruthy();
   const product = (await createdResponse.json()) as { id: number };
 
-  await page.goto(`/products/${product.id}`);
+  await page.goto('/products');
+  await page
+    .getByRole('button', { name: `View details for ${productName}` })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/products/${product.id}$`));
   await expect(
-    page.getByRole('heading', { name: 'Browser Full Stack Drop' }),
+    page.getByRole('heading', { name: productName }),
   ).toBeVisible();
   await page.getByRole('button', { name: /^42/ }).click();
   await page
@@ -73,4 +78,7 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
   expect(inventory.stockSold).toBe(1);
   expect(selectedSize?.stockAvailable).toBe(0);
   expect(selectedSize?.stockSold).toBe(1);
+
+  const cleanup = await request.delete(`${apiBaseUrl}/products/${product.id}`);
+  expect(cleanup.ok()).toBeTruthy();
 });
