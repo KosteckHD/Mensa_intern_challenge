@@ -257,6 +257,449 @@ h3,
   font-weight: 700;
 }
 
+.drop-landing {
+  display: grid;
+  gap: 0;
+}
+
+.drop-hero {
+  position: relative;
+  min-height: min(720px, calc(100vh - 150px));
+  overflow: hidden;
+  border: 1px solid var(--outline);
+  background: var(--surface-lowest);
+}
+
+.drop-hero > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.42) saturate(0.82);
+  transition: filter 500ms ease, transform 700ms ease;
+}
+
+.drop-hero:hover > img {
+  filter: brightness(0.48) saturate(0.95);
+  transform: scale(1.015);
+}
+
+.drop-hero-status {
+  position: absolute;
+  z-index: 1;
+  top: 20px;
+  right: 20px;
+  left: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--white);
+  font: 800 10px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-hero-status span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(253, 253, 253, 0.35);
+  padding: 0 10px;
+  background: rgba(14, 14, 14, 0.76);
+}
+
+.drop-hero-status i,
+.drop-system-bar i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1.5s linear infinite;
+}
+
+.drop-hero-copy {
+  position: absolute;
+  z-index: 1;
+  bottom: 44px;
+  left: 44px;
+  width: min(610px, 56%);
+  color: var(--white);
+}
+
+.drop-hero-copy > p:first-child {
+  margin: 0 0 9px;
+  color: #ff5a52;
+  font: 800 11px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-hero-copy h1 {
+  margin: 0;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.drop-colorway {
+  display: block;
+  margin-top: 12px;
+  color: rgba(253, 253, 253, 0.72);
+  font: 700 11px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-description {
+  max-width: 58ch;
+  margin: 22px 0 0;
+  color: rgba(253, 253, 253, 0.8);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.drop-price-line {
+  display: flex;
+  align-items: end;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.drop-price-line strong {
+  font: 700 28px Geist, sans-serif;
+}
+
+.drop-price-line span {
+  padding-bottom: 4px;
+  color: rgba(253, 253, 253, 0.68);
+  font: 700 10px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.drop-actions button {
+  min-height: 48px;
+  border: 1px solid rgba(253, 253, 253, 0.5);
+  padding: 0 22px;
+  background: rgba(14, 14, 14, 0.72);
+  color: var(--white);
+  font: 800 10px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-actions button:hover,
+.drop-actions button.primary {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--black);
+}
+
+.drop-actions button.primary:hover {
+  background: var(--black);
+  color: var(--white);
+}
+
+.drop-availability {
+  position: absolute;
+  z-index: 1;
+  right: 44px;
+  bottom: 44px;
+  width: 280px;
+  margin: 0;
+  border: 1px solid rgba(253, 253, 253, 0.28);
+  padding: 8px 16px;
+  background: rgba(14, 14, 14, 0.78);
+}
+
+.drop-availability > div {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(253, 253, 253, 0.16);
+}
+
+.drop-availability > div:last-child {
+  border-bottom: 0;
+}
+
+.drop-availability dt,
+.drop-availability dd {
+  margin: 0;
+  font: 700 9px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-availability dt {
+  color: rgba(253, 253, 253, 0.6);
+}
+
+.drop-availability dd {
+  color: var(--white);
+  font-size: 13px;
+}
+
+.drop-system-bar {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--outline);
+  border-top: 0;
+  background: var(--surface);
+}
+
+.drop-system-bar span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-right: 1px solid var(--outline);
+  padding: 0 14px;
+  color: var(--muted);
+  font: 700 9px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.drop-system-bar span:last-child {
+  justify-content: flex-end;
+  border-right: 0;
+}
+
+.next-drops {
+  margin-top: 64px;
+}
+
+.next-drops > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--outline);
+  padding-bottom: 14px;
+}
+
+.next-drops h2 {
+  margin: 5px 0 0;
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+.next-drops .kicker {
+  margin: 0;
+}
+
+.next-drops > header button {
+  min-height: 38px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--white);
+  font: 700 10px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.next-drop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.next-drop {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-right: 1px solid var(--outline);
+  border-bottom: 1px solid var(--outline);
+  padding: 16px;
+  background: transparent;
+  color: var(--white);
+  text-align: left;
+}
+
+.next-drop:first-child {
+  border-left: 1px solid var(--outline);
+}
+
+.next-drop:hover {
+  background: var(--surface);
+}
+
+.next-drop img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  background: var(--white);
+}
+
+.next-drop-index {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  color: var(--outline-strong);
+  font: 700 8px Geist, sans-serif;
+}
+
+.next-drop-copy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.next-drop-copy strong {
+  font: 700 13px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.next-drop-copy small,
+.next-drop-stock {
+  color: var(--muted);
+  font: 700 8px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.next-drop-stock {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--outline);
+  padding-top: 9px;
+  text-align: right;
+}
+
+@media (max-width: 1100px) {
+  .drop-hero {
+    min-height: 780px;
+  }
+
+  .drop-hero-copy {
+    right: 32px;
+    bottom: 210px;
+    left: 32px;
+    width: auto;
+  }
+
+  .drop-availability {
+    right: 32px;
+    bottom: 32px;
+    left: 32px;
+    width: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .drop-availability > div {
+    border-right: 1px solid rgba(253, 253, 253, 0.16);
+    border-bottom: 0;
+    padding: 0 12px;
+  }
+
+  .drop-availability > div:last-child {
+    border-right: 0;
+  }
+
+  .next-drop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .next-drop:nth-child(3) {
+    border-left: 1px solid var(--outline);
+  }
+}
+
+@media (max-width: 700px) {
+  .drop-hero {
+    min-height: 820px;
+  }
+
+  .drop-hero > img {
+    object-position: center;
+  }
+
+  .drop-hero-status {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .drop-hero-copy {
+    right: 20px;
+    bottom: 225px;
+    left: 20px;
+  }
+
+  .drop-hero-copy h1 {
+    font-size: 36px;
+  }
+
+  .drop-description {
+    margin-top: 16px;
+  }
+
+  .drop-price-line {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 18px;
+  }
+
+  .drop-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-top: 18px;
+  }
+
+  .drop-availability {
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
+    grid-template-columns: 1fr;
+  }
+
+  .drop-availability > div {
+    min-height: 38px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(253, 253, 253, 0.16);
+    padding: 0;
+  }
+
+  .drop-system-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .drop-system-bar span {
+    min-height: 42px;
+    border-bottom: 1px solid var(--outline);
+  }
+
+  .drop-system-bar span:nth-child(2) {
+    border-right: 0;
+  }
+
+  .drop-system-bar span:last-child {
+    justify-content: flex-start;
+  }
+
+  .next-drops > header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .next-drop-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .next-drop,
+  .next-drop:nth-child(3) {
+    border-left: 1px solid var(--outline);
+  }
+}
+
 .live-page {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(330px, 0.7fr);

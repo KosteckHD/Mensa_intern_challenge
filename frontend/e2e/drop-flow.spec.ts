@@ -108,8 +108,8 @@ test.describe('DropLock customer journey', () => {
         {
           ...product,
           id: 3,
-          sku: 'NIKE-AM1-LIMITED-BLUE',
-          name: 'Nike Air Max 1 Limited Blue',
+          sku: 'NIKE-AM1-UNIVERSITY-BLUE',
+          name: 'Nike Air Max 1 University Blue',
         },
       ],
     });
@@ -120,7 +120,7 @@ test.describe('DropLock customer journey', () => {
 
     await expect(page).toHaveURL(/\/products\/3$/);
     await expect(
-      page.getByRole('heading', { name: 'Nike Air Max 1 Limited Blue' }),
+      page.getByRole('heading', { name: 'Nike Air Max 1 University Blue' }),
     ).toBeVisible();
   });
 

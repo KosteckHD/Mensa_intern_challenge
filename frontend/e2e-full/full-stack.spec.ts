@@ -7,12 +7,24 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
   page,
   request,
 }) => {
+  const catalogResponse = await request.get(`${apiBaseUrl}/products`);
+  const catalog = (await catalogResponse.json()) as Array<{
+    id: number;
+    sku: string;
+  }>;
+  const legacyTarget = catalog.find(
+    (product) => product.sku === 'NIKE-AM1-UNIVERSITY-BLUE',
+  );
+  expect(legacyTarget).toBeDefined();
+
   await page.goto(
     '/products/b89e12d5-e2c6-4100-a52c-e806f9a6b919',
   );
-  await expect(page).toHaveURL(/\/products\/3$/);
+  await expect(page).toHaveURL(
+    new RegExp(`/products/${legacyTarget?.id}$`),
+  );
   await expect(
-    page.getByRole('heading', { name: 'Nike Air Max 1 Limited Blue' }),
+    page.getByRole('heading', { name: 'Nike Air Max 1 University Blue' }),
   ).toBeVisible();
 
   const suffix = randomUUID();
