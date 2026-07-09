@@ -339,13 +339,3 @@ Expected service URLs after creating the Blueprint:
 Confirm the generated Render subdomains after deployment and replace these
 expected URLs if Render adds a suffix.
 
-## Video Walkthrough Plan
-
-Maximum 5-minute structure:
-
-1. Explain the limited sneaker drop problem and race condition risk.
-2. Show the database schema and inventory invariant.
-3. Show the atomic reservation SQL.
-4. Demonstrate reservation, checkout, and order creation.
-5. Run or show the concurrent reservation test.
-6. Briefly show the frontend flow.
