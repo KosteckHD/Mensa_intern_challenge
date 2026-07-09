@@ -20,10 +20,13 @@ Implemented:
 - Frontend screens for live drop, products, product details, reservation,
   checkout, success, and failure states.
 
-Still to deliver before final submission:
+Final submission checklist:
 
-- Hosted frontend and backend links.
-- Short video walkthrough.
+- Source code and GitHub repository are ready.
+- Backend, frontend, database schema, migrations, seed data, and tests are implemented.
+- Render deployment is configured through `render.yaml`.
+- Confirm the final Render-generated frontend and backend URLs after deployment.
+- Record the required walkthrough video.
 
 ## Challenge Requirements Coverage
 
@@ -353,7 +356,6 @@ Expected service URLs after creating the Blueprint:
 Confirm the generated Render subdomains after deployment and replace these
 expected URLs if Render adds a suffix.
 
-<<<<<<< HEAD
 ## Video Walkthrough Plan
 
 The final recording must remain below the 5-minute limit. The following
@@ -423,5 +425,3 @@ video into a line-by-line code review.
 
 This plan leaves approximately 15 seconds of safety margin for transitions while
 remaining under the required maximum of five minutes.
-=======
->>>>>>> 272d5ba306baacddd7f80bf5c31be825b61ba89a
