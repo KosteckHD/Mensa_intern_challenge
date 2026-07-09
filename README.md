@@ -353,6 +353,7 @@ Expected service URLs after creating the Blueprint:
 Confirm the generated Render subdomains after deployment and replace these
 expected URLs if Render adds a suffix.
 
+<<<<<<< HEAD
 ## Video Walkthrough Plan
 
 The final recording must remain below the 5-minute limit. The following
@@ -422,3 +423,5 @@ video into a line-by-line code review.
 
 This plan leaves approximately 15 seconds of safety margin for transitions while
 remaining under the required maximum of five minutes.
+=======
+>>>>>>> 272d5ba306baacddd7f80bf5c31be825b61ba89a
