@@ -3,6 +3,7 @@ import {
   expectReservationPayload,
   installApiMock,
   order,
+  product,
   reservation,
 } from './mockApi';
 
@@ -91,6 +92,30 @@ test.describe('DropLock customer journey', () => {
     await expect(
       page.getByRole('heading', { name: 'This product could not be found.' }),
     ).not.toBeVisible();
+  });
+
+  test('redirects a legacy product UUID to its serial product URL', async ({
+    page,
+  }) => {
+    await installApiMock(page, {
+      products: [
+        {
+          ...product,
+          id: 3,
+          sku: 'NIKE-AM1-LIMITED-BLUE',
+          name: 'Nike Air Max 1 Limited Blue',
+        },
+      ],
+    });
+
+    await page.goto(
+      '/products/b89e12d5-e2c6-4100-a52c-e806f9a6b919',
+    );
+
+    await expect(page).toHaveURL(/\/products\/3$/);
+    await expect(
+      page.getByRole('heading', { name: 'Nike Air Max 1 Limited Blue' }),
+    ).toBeVisible();
   });
 
   test('shows reservation-expired recovery when checkout returns 410', async ({

@@ -7,6 +7,14 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
   page,
   request,
 }) => {
+  await page.goto(
+    '/products/b89e12d5-e2c6-4100-a52c-e806f9a6b919',
+  );
+  await expect(page).toHaveURL(/\/products\/3$/);
+  await expect(
+    page.getByRole('heading', { name: 'Nike Air Max 1 Limited Blue' }),
+  ).toBeVisible();
+
   const suffix = randomUUID();
   const productName = `Browser Drop ${suffix.slice(0, 8)}`;
   const createdResponse = await request.post(`${apiBaseUrl}/products`, {

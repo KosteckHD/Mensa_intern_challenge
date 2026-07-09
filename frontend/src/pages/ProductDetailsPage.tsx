@@ -9,11 +9,13 @@ import {
   selectedSizeStock,
 } from '../lib/format';
 import { imageFor } from '../lib/images';
+import { legacyProductSku } from '../lib/legacyProductAliases';
 import { Product } from '../types/api';
 
 export function ProductDetailsPage() {
   const { productId } = useParams();
   const productIdNumber = Number(productId);
+  const legacySku = legacyProductSku(productId);
   const { products, loadingProducts, reserve } = useDrop();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,7 +24,11 @@ export function ProductDetailsPage() {
     productIdNumber,
   );
   const listedProduct =
-    products.find((item) => String(item.id) === String(productId)) ?? null;
+    products.find((item) =>
+      legacySku
+        ? item.sku === legacySku
+        : String(item.id) === String(productId),
+    ) ?? null;
   const cachedProduct = listedProduct ?? navigationProduct;
   const [fetchedProduct, setFetchedProduct] = useState<Product | null>(
     cachedProduct,
@@ -38,6 +44,23 @@ export function ProductDetailsPage() {
       : cachedProduct;
 
   useEffect(() => {
+    if (legacySku) {
+      if (listedProduct) {
+        navigate(`/products/${listedProduct.id}`, {
+          replace: true,
+          state: { product: listedProduct },
+        });
+        return;
+      }
+
+      if (!loadingProducts) {
+        setFetchedProduct(null);
+        setNotFound(true);
+        setLoadingDetail(false);
+      }
+      return;
+    }
+
     if (!Number.isInteger(productIdNumber) || productIdNumber <= 0) {
       setFetchedProduct(null);
       setNotFound(true);
@@ -67,7 +90,14 @@ export function ProductDetailsPage() {
     return () => {
       active = false;
     };
-  }, [cachedProduct, productIdNumber]);
+  }, [
+    cachedProduct,
+    legacySku,
+    listedProduct,
+    loadingProducts,
+    navigate,
+    productIdNumber,
+  ]);
 
   useEffect(() => {
     if (product && !shoeSize) setShoeSize(getDefaultSize(product));
