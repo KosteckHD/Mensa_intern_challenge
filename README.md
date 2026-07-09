@@ -17,7 +17,8 @@ Implemented:
 - Expire reservations and return stock to availability.
 - Protect inventory from race conditions with PostgreSQL transactions.
 - Integration tests for concurrent reservations, checkout, and expiry.
-- Frontend screens for live drop, inventory, reservation, checkout, success, and failure states.
+- Frontend screens for live drop, products, product details, reservation,
+  checkout, success, and failure states.
 
 Still to deliver before final submission:
 

@@ -37,7 +37,7 @@ export function ErrorPage() {
   async function retryConnection() {
     clearFailure();
     await refreshProducts();
-    navigate(state?.from ?? '/inventory', { replace: true });
+    navigate(state?.from ?? '/products', { replace: true });
   }
 
   function returnToProduct() {
@@ -45,15 +45,15 @@ export function ErrorPage() {
     navigate(
       lastAttempt.product
         ? `/products/${lastAttempt.product.id}`
-        : '/inventory',
+        : '/products',
       { replace: true },
     );
   }
 
-  async function returnToInventory() {
+  async function returnToProducts() {
     clearFailure();
     await refreshProducts();
-    navigate('/inventory', { replace: true });
+    navigate('/products', { replace: true });
   }
 
   return (
@@ -62,7 +62,7 @@ export function ErrorPage() {
         className="failure-close"
         onClick={() => {
           clearFailure();
-          navigate('/inventory');
+          navigate('/products');
         }}
         aria-label="Close"
       >
@@ -118,9 +118,9 @@ export function ErrorPage() {
           </button>
           <button
             className="secondary-button"
-            onClick={() => void returnToInventory()}
+            onClick={() => void returnToProducts()}
           >
-            {network ? 'Back to inventory' : 'Refresh inventory'}
+            {network ? 'Back to products' : 'Refresh products'}
           </button>
         </div>
       </section>

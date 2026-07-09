@@ -23,10 +23,15 @@ export function Layout() {
         <span className="live-label"><i /> LIVE DROP</span>
         <nav aria-label="Primary navigation">
           <Link
-            className={location.pathname === '/inventory' ? 'active' : ''}
-            to="/inventory"
+            className={
+              location.pathname === '/products' ||
+              location.pathname.startsWith('/products/')
+                ? 'active'
+                : ''
+            }
+            to="/products"
           >
-            Inventory
+            Products
           </Link>
           {reservation && (
             <Link
@@ -36,9 +41,9 @@ export function Layout() {
                   ? 'active'
                   : ''
               }
-              to={`/reservation/${reservation.id}`}
+              to={`/checkout/${reservation.id}`}
             >
-              Reservation
+              Checkout
             </Link>
           )}
           <button onClick={() => void refreshProducts()}>Refresh</button>

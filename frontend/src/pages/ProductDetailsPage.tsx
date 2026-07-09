@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EmptyInventory, LoadingInventory } from '../components/SystemState';
+import { EmptyProducts, LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import {
   formatPrice,
@@ -22,9 +22,9 @@ export function ProductDetailsPage() {
     if (product && !shoeSize) setShoeSize(getDefaultSize(product));
   }, [product, shoeSize]);
 
-  if (loadingProducts) return <LoadingInventory />;
+  if (loadingProducts) return <LoadingProducts />;
   if (!product) {
-    return <EmptyInventory onRefresh={() => void refreshProducts()} />;
+    return <EmptyProducts onRefresh={() => void refreshProducts()} />;
   }
 
   const selectedStock = selectedSizeStock(product, shoeSize);
@@ -34,7 +34,7 @@ export function ProductDetailsPage() {
     setReserving(true);
     try {
       const created = await reserve(product!, shoeSize, email);
-      navigate(`/reservation/${created.id}`);
+      navigate(`/checkout/${created.id}`);
     } catch {
       // The context maps API failures to dedicated error routes.
     } finally {
@@ -44,9 +44,15 @@ export function ProductDetailsPage() {
 
   return (
     <section className="product-detail">
-      <button className="back-button" onClick={() => navigate('/inventory')}>
-        ← Back to inventory
-      </button>
+      <div className="product-detail-bar">
+        <div>
+          <strong>Product details</strong>
+          <span>SKU: {product.sku}</span>
+        </div>
+        <button onClick={() => navigate('/products')} aria-label="Close product details">
+          ×
+        </button>
+      </div>
       <div className="detail-media">
         <img src={imageFor(product)} alt={product.name} />
         <span className="image-code">IMG_0{product.id} / DROP</span>
@@ -101,14 +107,22 @@ export function ProductDetailsPage() {
         </label>
         <div className="reserve-block">
           <p>Reservation guaranteed for 5 minutes</p>
-          <button
-            className="primary-button"
-            disabled={!shoeSize || selectedStock === 0 || reserving}
-            onClick={() => void submitReservation()}
-          >
-            {reserving ? 'Securing allocation...' : 'Reserve pair'}
-            <span aria-hidden="true">→</span>
-          </button>
+          <div className="reserve-actions">
+            <button
+              className="secondary-button"
+              onClick={() => navigate('/products')}
+            >
+              ← Back
+            </button>
+            <button
+              className="primary-button"
+              disabled={!shoeSize || selectedStock === 0 || reserving}
+              onClick={() => void submitReservation()}
+            >
+              {reserving ? 'Securing allocation...' : 'Reserve pair'}
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>

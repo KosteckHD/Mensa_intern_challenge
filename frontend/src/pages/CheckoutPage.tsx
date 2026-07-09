@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { LoadingInventory } from '../components/SystemState';
+import { LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import { formatPrice, formatTime } from '../lib/format';
 import { fallbackImages, imageFor } from '../lib/images';
@@ -27,7 +27,7 @@ export function CheckoutPage() {
 
     const id = Number(reservationId);
     if (!Number.isInteger(id) || id <= 0) {
-      navigate('/inventory', { replace: true });
+      navigate('/products', { replace: true });
       return;
     }
     if (reservation?.id === id) {
@@ -36,11 +36,11 @@ export function CheckoutPage() {
     }
     void ensureReservation(id).then((restored) => {
       setRestoring(false);
-      if (!restored) navigate('/inventory', { replace: true });
+      if (!restored) navigate('/products', { replace: true });
     });
   }, [ensureReservation, navigate, reservation?.id, reservationId]);
 
-  if (restoring || !reservation) return <LoadingInventory />;
+  if (restoring || !reservation) return <LoadingProducts />;
 
   const subtotal = activeProduct?.priceCents ?? 0;
   const shipping = 3500;
@@ -75,7 +75,7 @@ export function CheckoutPage() {
     setCancelling(true);
     try {
       await cancel();
-      navigate('/inventory');
+      navigate('/products');
     } catch {
       // Error routing is handled centrally by the context and layout.
     } finally {

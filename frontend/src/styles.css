@@ -522,11 +522,37 @@ h3,
 
 .inventory-tools {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) auto;
+  grid-template-columns: minmax(280px, 1fr) auto auto;
   gap: 16px;
   border-top: 1px solid var(--outline);
   border-bottom: 1px solid var(--outline);
   padding: 16px 0;
+}
+
+.size-filter {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: auto minmax(110px, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--outline);
+  padding-left: 13px;
+  background: var(--surface-low);
+  color: var(--muted);
+  font: 700 10px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.size-filter select {
+  height: 100%;
+  border: 0;
+  border-left: 1px solid var(--outline);
+  outline: 0;
+  padding: 0 32px 0 12px;
+  background: var(--surface-lowest);
+  color: var(--text);
+  font: 600 11px Geist, sans-serif;
+  text-transform: uppercase;
 }
 
 .search-field {
@@ -741,6 +767,47 @@ h3,
   border: 1px solid var(--outline);
 }
 
+.product-detail-bar {
+  grid-column: 1 / -1;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--outline);
+  background: var(--surface-lowest);
+}
+
+.product-detail-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-left: 18px;
+}
+
+.product-detail-bar strong {
+  font: 800 12px Geist, sans-serif;
+  text-transform: uppercase;
+}
+
+.product-detail-bar span {
+  color: var(--muted);
+  font: 700 9px Geist, sans-serif;
+}
+
+.product-detail-bar button {
+  width: 58px;
+  align-self: stretch;
+  border: 0;
+  border-left: 1px solid var(--outline);
+  background: transparent;
+  color: var(--text);
+  font-size: 24px;
+}
+
+.product-detail-bar button:hover {
+  background: var(--surface-high);
+}
+
 .back-button {
   position: absolute;
   z-index: 2;
@@ -899,6 +966,12 @@ h3,
 
 .reserve-block .primary-button {
   width: 100%;
+}
+
+.reserve-actions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
 }
 
 .reservation-page {
@@ -1626,6 +1699,10 @@ footer nav {
     grid-template-columns: 1fr;
   }
 
+  .size-filter {
+    grid-template-columns: auto 1fr;
+  }
+
   .switch {
     min-height: 38px;
   }
@@ -1711,6 +1788,10 @@ footer nav {
 
   .reserve-block {
     padding: 22px 20px;
+  }
+
+  .reserve-actions {
+    grid-template-columns: 1fr;
   }
 
   .reservation-watermark {

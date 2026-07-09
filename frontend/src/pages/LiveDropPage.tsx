@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { DataPoint } from '../components/DataPoint';
-import { EmptyInventory, LoadingInventory } from '../components/SystemState';
+import { EmptyProducts, LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import { imageFor } from '../lib/images';
 
@@ -10,9 +10,9 @@ export function LiveDropPage() {
   const product =
     products.find((item) => item.stockAvailable > 0) ?? products[0] ?? null;
 
-  if (loadingProducts) return <LoadingInventory />;
+  if (loadingProducts) return <LoadingProducts />;
   if (!product) {
-    return <EmptyInventory onRefresh={() => void refreshProducts()} />;
+    return <EmptyProducts onRefresh={() => void refreshProducts()} />;
   }
 
   return (
@@ -46,8 +46,8 @@ export function LiveDropPage() {
           <DataPoint label="AVAIL_POOL" value={product.stockAvailable} />
           <DataPoint label="TOTAL_UNITS" value={product.stockTotal} />
         </div>
-        <button className="primary-button" onClick={() => navigate('/inventory')}>
-          View inventory <span aria-hidden="true">→</span>
+        <button className="primary-button" onClick={() => navigate('/products')}>
+          View products <span aria-hidden="true">→</span>
         </button>
       </div>
 
@@ -60,7 +60,7 @@ export function LiveDropPage() {
       <div className="live-list">
         <div className="section-title">
           <p className="kicker">Current allocation</p>
-          <h2>Live inventory</h2>
+          <h2>Live products</h2>
         </div>
         <div className="live-products">
           {products.slice(0, 4).map((item, index) => (

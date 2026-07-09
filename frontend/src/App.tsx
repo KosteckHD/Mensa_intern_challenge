@@ -4,9 +4,9 @@ import { DropProvider } from './context/DropContext';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { CheckoutSuccessPage } from './pages/CheckoutSuccessPage';
 import { ErrorPage } from './pages/ErrorPage';
-import { InventoryPage } from './pages/InventoryPage';
 import { LiveDropPage } from './pages/LiveDropPage';
 import { ProductDetailsPage } from './pages/ProductDetailsPage';
+import { ProductsPage } from './pages/ProductsPage';
 import { ReservationPage } from './pages/ReservationPage';
 
 export function App() {
@@ -16,8 +16,9 @@ export function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<LiveDropPage />} />
-            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="products" element={<ProductsPage />} />
             <Route path="products/:productId" element={<ProductDetailsPage />} />
+            <Route path="inventory" element={<Navigate to="/products" replace />} />
             <Route
               path="reservation/:reservationId"
               element={<ReservationPage />}

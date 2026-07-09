@@ -10,8 +10,8 @@ test.describe('DropLock customer journey', () => {
   test('reserves a selected size and completes checkout', async ({ page }) => {
     const capture = await installApiMock(page);
 
-    await page.goto('/inventory');
-    await expect(page.getByRole('heading', { name: 'Inventory' })).toBeVisible();
+    await page.goto('/products');
+    await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
     await page
       .getByRole('button', { name: 'Open Off-White x Dunk Low' })
       .click();
@@ -24,14 +24,10 @@ test.describe('DropLock customer journey', () => {
     await page.getByRole('button', { name: /Reserve pair/ }).click();
 
     await expectReservationPayload(capture);
-    await expect(page).toHaveURL(/\/reservation\/101$/);
+    await expect(page).toHaveURL(/\/checkout\/101$/);
     await expect(
       page.getByRole('heading', { name: 'Off-White x Dunk Low' }),
     ).toBeVisible();
-    await expect(page.getByText('#101')).toBeVisible();
-
-    await page.getByRole('button', { name: /Complete checkout/ }).click();
-    await expect(page).toHaveURL(/\/checkout\/101$/);
 
     await fillCheckout(page);
     await page.getByRole('button', { name: /Complete checkout/ }).click();
@@ -83,10 +79,10 @@ test.describe('DropLock customer journey', () => {
     await expect(page.getByText(/pair returned to inventory/i)).toBeVisible();
   });
 
-  test('renders the empty inventory state', async ({ page }) => {
+  test('renders the empty products state', async ({ page }) => {
     await installApiMock(page, { products: [] });
 
-    await page.goto('/inventory');
+    await page.goto('/products');
 
     await expect(
       page.getByRole('heading', { name: 'No active drops' }),
@@ -96,7 +92,7 @@ test.describe('DropLock customer journey', () => {
     ).toBeVisible();
   });
 
-  test('renders loading state while inventory request is pending', async ({
+  test('renders loading state while products request is pending', async ({
     page,
   }) => {
     const capture = await installApiMock(page, { holdProducts: true });
@@ -104,7 +100,7 @@ test.describe('DropLock customer journey', () => {
     await page.goto('/');
 
     await expect(
-      page.getByRole('heading', { name: 'Syncing inventory' }),
+      page.getByRole('heading', { name: 'Syncing products' }),
     ).toBeVisible();
     capture.releaseProducts();
     await expect(

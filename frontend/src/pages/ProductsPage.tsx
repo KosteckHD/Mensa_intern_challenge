@@ -1,17 +1,26 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataPoint } from '../components/DataPoint';
-import { EmptyInventory, LoadingInventory } from '../components/SystemState';
+import { EmptyProducts, LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import { formatPrice } from '../lib/format';
 import { imageFor } from '../lib/images';
 import { Product } from '../types/api';
 
-export function InventoryPage() {
+export function ProductsPage() {
   const { products, stats, loadingProducts, refreshProducts } = useDrop();
   const [query, setQuery] = useState('');
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [sizeFilter, setSizeFilter] = useState('all');
   const navigate = useNavigate();
+
+  const sizes = useMemo(
+    () =>
+      Array.from(
+        new Set(products.flatMap((product) => product.sizes.map((size) => size.sizeCode))),
+      ).sort(),
+    [products],
+  );
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -26,23 +35,37 @@ export function InventoryPage() {
         .join(' ')
         .toLowerCase()
         .includes(normalizedQuery);
-      return matchesQuery && (!availableOnly || product.stockAvailable > 0);
+      const matchesSize =
+        sizeFilter === 'all' ||
+        product.sizes.some(
+          (size) => size.sizeCode === sizeFilter && size.stockAvailable > 0,
+        );
+      return (
+        matchesQuery &&
+        matchesSize &&
+        (!availableOnly || product.stockAvailable > 0)
+      );
     });
-  }, [availableOnly, products, query]);
+  }, [availableOnly, products, query, sizeFilter]);
 
-  if (loadingProducts) return <LoadingInventory />;
+  const valuationCents = products.reduce(
+    (sum, product) => sum + product.priceCents * product.stockTotal,
+    0,
+  );
+
+  if (loadingProducts) return <LoadingProducts />;
 
   return (
     <section className="inventory-page">
       <div className="inventory-heading">
         <div>
           <p className="kicker">Live drop</p>
-          <h1>Inventory</h1>
+          <h1>Products</h1>
         </div>
         <div className="inventory-stats">
           <DataPoint label="TOTAL PRODUCTS" value={stats.products} />
-          <DataPoint label="AVAILABLE PAIRS" value={stats.available} />
           <DataPoint label="TOTAL PAIRS" value={stats.total} />
+          <DataPoint label="VALUATION" value={formatPrice(valuationCents)} />
         </div>
       </div>
 
@@ -54,7 +77,7 @@ export function InventoryPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search model, brand or SKU"
-            aria-label="Search inventory"
+            aria-label="Search products"
           />
         </label>
         <label className="switch">
@@ -66,14 +89,29 @@ export function InventoryPage() {
           <span aria-hidden="true" />
           Only available
         </label>
+        <label className="size-filter">
+          <span>Size</span>
+          <select
+            value={sizeFilter}
+            onChange={(event) => setSizeFilter(event.target.value)}
+            aria-label="Filter by size"
+          >
+            <option value="all">All sizes</option>
+            {sizes.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {filteredProducts.length === 0 ? (
-        <EmptyInventory onRefresh={() => void refreshProducts()} />
+        <EmptyProducts onRefresh={() => void refreshProducts()} />
       ) : (
         <div className="inventory-list">
           {filteredProducts.map((product, index) => (
-            <InventoryRow
+            <ProductRow
               key={product.id}
               product={product}
               index={index}
@@ -86,7 +124,7 @@ export function InventoryPage() {
   );
 }
 
-function InventoryRow({
+function ProductRow({
   product,
   index,
   onOpen,

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { droplockApi } from '../api/droplockApi';
 import { DataPoint } from '../components/DataPoint';
-import { LoadingInventory } from '../components/SystemState';
+import { LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import { formatPrice } from '../lib/format';
 import { fallbackImages, imageFor } from '../lib/images';
@@ -25,17 +25,17 @@ export function CheckoutSuccessPage() {
     if (order) return;
     const id = Number(orderId);
     if (!Number.isInteger(id) || id <= 0) {
-      navigate('/inventory', { replace: true });
+      navigate('/products', { replace: true });
       return;
     }
     void droplockApi
       .getOrder(id)
       .then(setOrder)
-      .catch(() => navigate('/inventory', { replace: true }))
+      .catch(() => navigate('/products', { replace: true }))
       .finally(() => setLoading(false));
   }, [navigate, order, orderId]);
 
-  if (loading || !order) return <LoadingInventory />;
+  if (loading || !order) return <LoadingProducts />;
 
   const product =
     products.find((item) => item.id === order.productId) ?? null;
@@ -66,8 +66,8 @@ export function CheckoutSuccessPage() {
         <DataPoint label="ORDER ID" value={`#${order.id}`} />
         <DataPoint label="RESERVATION" value={`#${order.reservationId}`} />
       </div>
-      <button className="primary-button" onClick={() => navigate('/inventory')}>
-        Return to inventory <span aria-hidden="true">→</span>
+      <button className="primary-button" onClick={() => navigate('/products')}>
+        Return to products <span aria-hidden="true">→</span>
       </button>
     </section>
   );
