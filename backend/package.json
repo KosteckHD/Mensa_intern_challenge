@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/main.js",
+    "start": "node dist/src/main.js",
     "start:dev": "tsx watch src/main.ts",
     "start:e2e": "tsx scripts/start-e2e.ts",
     "migrate": "tsx scripts/migrate.ts",
