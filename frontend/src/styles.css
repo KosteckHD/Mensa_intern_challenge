@@ -2348,10 +2348,36 @@ footer nav {
 }
 
 .success-main {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: calc(100vh - 82px);
   display: grid;
   place-items: center;
   padding: 48px 16px;
+}
+
+.success-main::before {
+  position: absolute;
+  z-index: -1;
+  inset: 10% 8%;
+  content: '';
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(110px);
+  animation: success-background-pulse 4.5s ease-in-out infinite;
+}
+
+@keyframes success-background-pulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.06);
+  }
 }
 
 .checkout-success {
@@ -2372,20 +2398,6 @@ footer nav {
   align-items: center;
   gap: 12px;
   text-align: center;
-}
-
-.success-confirmation::before {
-  position: absolute;
-  z-index: -1;
-  top: 50%;
-  left: 50%;
-  width: 82%;
-  height: 88px;
-  content: '';
-  pointer-events: none;
-  background: rgba(242, 239, 238, 0.18);
-  filter: blur(58px);
-  transform: translate(-50%, -50%);
 }
 
 .success-check {
