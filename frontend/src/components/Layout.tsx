@@ -7,6 +7,7 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isCheckout = location.pathname.startsWith('/checkout/');
+  const isCheckoutSuccess = location.pathname.startsWith('/checkout/success/');
 
   useEffect(() => {
     if (failure && !location.pathname.startsWith('/errors/')) {
@@ -17,40 +18,50 @@ export function Layout() {
   }, [failure, location.pathname, navigate]);
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <Link className="wordmark" to="/">DROPLOCK</Link>
-        <span className="live-label"><i /> LIVE DROP</span>
-        <nav aria-label="Primary navigation">
-          <Link
-            className={
-              location.pathname === '/products' ||
-              location.pathname.startsWith('/products/')
-                ? 'active'
-                : ''
-            }
-            to="/products"
-          >
-            Products
-          </Link>
-          {reservation && (
+    <div className={`app-shell ${isCheckoutSuccess ? 'success-shell' : ''}`}>
+      {!isCheckoutSuccess && (
+        <header className="topbar">
+          <Link className="wordmark" to="/">DROPLOCK</Link>
+          <span className="live-label"><i /> LIVE DROP</span>
+          <nav aria-label="Primary navigation">
             <Link
               className={
-                location.pathname.startsWith('/reservation/') ||
-                location.pathname.startsWith('/checkout/')
+                location.pathname === '/products' ||
+                location.pathname.startsWith('/products/')
                   ? 'active'
                   : ''
               }
-              to={`/checkout/${reservation.id}`}
+              to="/products"
             >
-              Checkout
+              Products
             </Link>
-          )}
-          <button onClick={() => void refreshProducts()}>Refresh</button>
-        </nav>
-      </header>
+            {reservation && (
+              <Link
+                className={
+                  location.pathname.startsWith('/reservation/') ||
+                  location.pathname.startsWith('/checkout/')
+                    ? 'active'
+                    : ''
+                }
+                to={`/checkout/${reservation.id}`}
+              >
+                Checkout
+              </Link>
+            )}
+            <button onClick={() => void refreshProducts()}>Refresh</button>
+          </nav>
+        </header>
+      )}
 
-      <main className={isCheckout ? 'checkout-main' : 'main'}>
+      <main
+        className={
+          isCheckoutSuccess
+            ? 'success-main'
+            : isCheckout
+              ? 'checkout-main'
+              : 'main'
+        }
+      >
         <Outlet />
       </main>
 

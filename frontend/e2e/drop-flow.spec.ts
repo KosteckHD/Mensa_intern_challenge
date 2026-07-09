@@ -35,10 +35,16 @@ test.describe('DropLock customer journey', () => {
 
     await expect(page).toHaveURL(/\/checkout\/success\/501$/);
     await expect(
-      page.getByRole('heading', { name: 'Pair secured.' }),
+      page.getByRole('heading', { name: 'Your pair is locked' }),
     ).toBeVisible();
     await expect(page.getByText(order.orderNumber)).toBeVisible();
     await expect(page.getByText('#501')).toBeVisible();
+    await expect(
+      page.getByRole('navigation', { name: 'Primary navigation' }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Copy order number' }),
+    ).toBeVisible();
   });
 
   test('shows sold-out recovery after reservation conflict', async ({ page }) => {

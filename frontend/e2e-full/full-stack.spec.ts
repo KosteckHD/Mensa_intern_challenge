@@ -64,7 +64,7 @@ test('completes a real React to NestJS to PostgreSQL checkout', async ({
 
   await expect(page).toHaveURL(/\/checkout\/success\/\d+$/);
   await expect(
-    page.getByRole('heading', { name: 'Pair secured.' }),
+    page.getByRole('heading', { name: 'Your pair is locked' }),
   ).toBeVisible();
   await expect(page.getByText('$584')).toBeVisible();
 

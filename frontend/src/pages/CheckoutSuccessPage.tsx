@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { droplockApi } from '../api/droplockApi';
-import { DataPoint } from '../components/DataPoint';
 import { LoadingProducts } from '../components/SystemState';
 import { useDrop } from '../context/DropContext';
 import { formatPrice } from '../lib/format';
@@ -20,6 +19,7 @@ export function CheckoutSuccessPage() {
   const state = location.state as SuccessLocationState | null;
   const [order, setOrder] = useState<Order | null>(state?.result?.order ?? null);
   const [loading, setLoading] = useState(!state?.result?.order);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (order) return;
@@ -40,35 +40,82 @@ export function CheckoutSuccessPage() {
   const product =
     products.find((item) => item.id === order.productId) ?? null;
 
+  async function copyOrderNumber() {
+    if (!order) return;
+    try {
+      await navigator.clipboard.writeText(order.orderNumber);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
   return (
-    <section className="success-page">
-      <div className="success-mark" aria-hidden="true">✓</div>
-      <p className="kicker">Transaction settled</p>
-      <h1>Pair secured.</h1>
-      <p className="success-copy">
-        Your checkout is complete. The allocation has been permanently removed
-        from available inventory.
-      </p>
-      <div className="success-order">
-        <img
-          src={product ? imageFor(product) : fallbackImages[0]}
-          alt={product?.name ?? 'Purchased sneaker'}
-        />
-        <div>
-          <span>Order {order.orderNumber}</span>
-          <h2>{product?.name ?? 'Limited pair'}</h2>
-          <p>{order.shoeSize} / QTY: {order.quantity}</p>
+    <section className="checkout-success" aria-labelledby="success-title">
+      <div className="checkout-success-content">
+        <header className="success-confirmation">
+          <div className="success-check" aria-hidden="true">✓</div>
+          <span>Order confirmed</span>
+          <h1 id="success-title">Your pair is locked</h1>
+          <p>Order #{order.orderNumber}</p>
+        </header>
+
+        <article className="confirmed-order">
+          <div className="confirmed-product-image">
+            <img
+              src={product ? imageFor(product) : fallbackImages[0]}
+              alt={product?.name ?? 'Purchased sneaker'}
+            />
+            <span>{order.quantity}x</span>
+          </div>
+
+          <div className="confirmed-order-body">
+            <div>
+              <h2>{product?.name ?? 'Limited pair'}</h2>
+              <dl>
+                <div>
+                  <dt>Size</dt>
+                  <dd>{order.shoeSize}</dd>
+                </div>
+                <div>
+                  <dt>Total</dt>
+                  <dd>{formatPrice(order.totalPriceCents)}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <ol className="order-timeline" aria-label="Order status">
+              <li>
+                <i aria-hidden="true" />
+                <span>Reservation completed</span>
+              </li>
+              <li>
+                <i aria-hidden="true" />
+                <span>Order confirmed</span>
+              </li>
+            </ol>
+          </div>
+        </article>
+
+        <div className="success-identifiers">
+          <span>Order ID <strong>#{order.id}</strong></span>
+          <span>Reservation <strong>#{order.reservationId}</strong></span>
         </div>
-        <strong>{formatPrice(order.totalPriceCents)}</strong>
+
+        <div className="success-actions">
+          <button onClick={() => navigate('/products')}>
+            Back to products
+          </button>
+          <button className="primary" onClick={() => void copyOrderNumber()}>
+            {copied ? 'Order number copied' : 'Copy order number'}
+          </button>
+        </div>
+
+        <p className="success-footnote">
+          Order details are recorded and inventory has been permanently updated.
+        </p>
       </div>
-      <div className="success-meta">
-        <DataPoint label="STATUS" value="CONFIRMED" />
-        <DataPoint label="ORDER ID" value={`#${order.id}`} />
-        <DataPoint label="RESERVATION" value={`#${order.reservationId}`} />
-      </div>
-      <button className="primary-button" onClick={() => navigate('/products')}>
-        Return to products <span aria-hidden="true">→</span>
-      </button>
     </section>
   );
 }
