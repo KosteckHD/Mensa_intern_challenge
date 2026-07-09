@@ -5,6 +5,9 @@ import { useDrop } from '../context/DropContext';
 import { formatPrice, formatTime } from '../lib/format';
 import { fallbackImages, imageFor } from '../lib/images';
 
+const namePattern = String.raw`\p{L}+(?:[ '\-]\p{L}+)*`;
+const addressPattern = String.raw`[\p{L}0-9][\p{L}0-9 .,'\/\-]{2,99}`;
+
 export function CheckoutPage() {
   const { reservationId } = useParams();
   const {
@@ -102,7 +105,7 @@ export function CheckoutPage() {
                 name="firstName"
                 required
                 autoComplete="given-name"
-                pattern="[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+(?:[ '-][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)*"
+                pattern={namePattern}
                 minLength={2}
                 maxLength={50}
                 title="Use letters, spaces, apostrophes or hyphens."
@@ -114,7 +117,7 @@ export function CheckoutPage() {
                 name="lastName"
                 required
                 autoComplete="family-name"
-                pattern="[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+(?:[ '-][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)*"
+                pattern={namePattern}
                 minLength={2}
                 maxLength={50}
                 title="Use letters, spaces, apostrophes or hyphens."
@@ -126,7 +129,7 @@ export function CheckoutPage() {
                 name="shippingAddress"
                 required
                 autoComplete="street-address"
-                pattern="[A-Za-z0-9ĄĆĘŁŃÓŚŹŻąćęłńóśźż][A-Za-z0-9ĄĆĘŁŃÓŚŹŻąćęłńóśźż .,'/-]{2,99}"
+                pattern={addressPattern}
                 maxLength={100}
                 title="Enter a valid street address (3–100 characters)."
               />
@@ -137,7 +140,7 @@ export function CheckoutPage() {
                 name="shippingCity"
                 required
                 autoComplete="address-level2"
-                pattern="[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+(?:[ '-][A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+)*"
+                pattern={namePattern}
                 minLength={2}
                 maxLength={60}
                 title="Use letters, spaces, apostrophes or hyphens."
