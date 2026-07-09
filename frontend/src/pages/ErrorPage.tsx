@@ -32,7 +32,7 @@ export function ErrorPage() {
     ? 'Your hold ended and the pair returned to inventory. The session has timed out.'
     : soldOut
       ? 'This size was reserved by another buyer before your request completed.'
-      : 'Unable to reach the DropLock server. Verify your connection and try again.';
+      : 'Backend is not reachable. Make sure the NestJS server is running on the configured API URL, then retry.';
 
   async function retryConnection() {
     clearFailure();

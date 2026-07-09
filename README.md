@@ -25,6 +25,20 @@ Still to deliver before final submission:
 - Hosted frontend and backend links.
 - Short video walkthrough.
 
+## Challenge Requirements Coverage
+
+| Requirement | Implementation |
+| --- | --- |
+| View available products | Responsive React catalog and product details screens backed by `GET /api/products` and `GET /api/products/:id`. |
+| Reserve a product | Size-specific reservation flow backed by `POST /api/reservations`. |
+| Complete checkout | Checkout validates an active reservation, moves reserved stock to sold, and creates an order in one PostgreSQL transaction. |
+| Handle expired reservations | Expired holds are released by a background sweep, an explicit cleanup endpoint, and expiry checks performed during reservation and checkout operations. |
+| Keep inventory accurate under concurrency | Atomic conditional SQL updates and database transactions prevent stock from becoming negative or being oversold. |
+| Node.js, TypeScript, NestJS backend | Implemented in `backend/`. |
+| React and TypeScript frontend | Implemented in `frontend/` with desktop, tablet, and mobile layouts. |
+| Appropriate database choice | PostgreSQL is used and justified below. |
+| Important functionality is tested | PostgreSQL integration tests cover concurrency, checkout, and expiry; Playwright covers the complete browser flow and failure states on desktop and mobile. |
+
 ## Tech Stack
 
 Backend:
@@ -292,7 +306,7 @@ Verified locally:
 ```txt
 backend npm run build -> OK
 frontend npm run build -> OK
-frontend npm run test:e2e -> 10 passed
+frontend npm run test:e2e -> 16 passed (desktop and mobile Chromium)
 backend npm test with TEST_DATABASE_URL -> 7 passed
 frontend npm run test:e2e:full -> 1 passed
 ```
@@ -341,11 +355,70 @@ expected URLs if Render adds a suffix.
 
 ## Video Walkthrough Plan
 
-Maximum 5-minute structure:
+The final recording must remain below the 5-minute limit. The following
+structure covers every requirement and evaluation area without turning the
+video into a line-by-line code review.
 
-1. Explain the limited sneaker drop problem and race condition risk.
-2. Show the database schema and inventory invariant.
-3. Show the atomic reservation SQL.
-4. Demonstrate reservation, checkout, and order creation.
-5. Run or show the concurrent reservation test.
-6. Briefly show the frontend flow.
+### 0:00-0:25 — Problem and solution overview
+
+- Introduce the limited product drop and the risk of multiple users reserving
+  the same stock.
+- State the stack: React and TypeScript, NestJS and TypeScript, PostgreSQL.
+- Explain the main goal: inventory must remain correct during concurrent
+  reservation attempts.
+
+### 0:25-1:15 — Architecture, API, and data model
+
+- Show the repository structure and the frontend-to-API-to-database flow.
+- Show the four main tables: `products`, `product_sizes`, `reservations`, and
+  `orders`.
+- Explain why PostgreSQL was chosen: transactions, row-level locking,
+  constraints, and atomic conditional updates.
+- Point out the inventory invariant:
+  `available + reserved + sold = total`.
+- Briefly show the main endpoints for products, reservations, checkout, and
+  expiration cleanup.
+
+### 1:15-2:00 — Concurrency and reservation expiration
+
+- Show the conditional stock update used during reservation and explain that it
+  succeeds only when enough stock is available.
+- Explain that the reservation and inventory changes happen in one transaction,
+  preventing overselling.
+- Explain the reservation TTL, background expiration sweep, and checkout-time
+  expiry check.
+- Show that expired or cancelled stock moves from `reserved` back to
+  `available`.
+
+### 2:00-3:25 — Working product demonstration
+
+- Open the responsive product catalog and select a product and shoe size.
+- Create a reservation and point out the countdown timer.
+- Complete checkout and show the confirmed order.
+- Briefly demonstrate one graceful failure state, preferably an expired
+  reservation or sold-out conflict.
+- Mention that checkout sends only an opaque demo payment reference and that raw
+  card data is not stored by the backend.
+
+### 3:25-4:10 — Testing and correctness evidence
+
+- Show the concurrency integration test: 50 simultaneous attempts for 5 items,
+  exactly 5 successes, and no negative or oversold inventory.
+- Mention the checkout and expiration integration tests.
+- Show or mention the Playwright suite running on desktop and mobile, including
+  the complete checkout flow and `409`, `410`, loading, and empty states.
+- If time permits, show the real React-to-NestJS-to-PostgreSQL E2E result.
+
+### 4:10-4:45 — Decisions, trade-offs, and next steps
+
+- Summarize the main assumptions: size-specific stock, one active hold before
+  checkout, and payment processing outside the challenge scope.
+- Explain the main trade-offs: handwritten SQL instead of an ORM, aggregate
+  product counters alongside size-level inventory, and an in-process expiration
+  sweep instead of a production queue.
+- Name two improvements for a production version, such as authentication,
+  a durable job queue, payment integration, observability, or OpenAPI docs.
+- Finish by showing the GitHub repository and hosted application links.
+
+This plan leaves approximately 15 seconds of safety margin for transitions while
+remaining under the required maximum of five minutes.

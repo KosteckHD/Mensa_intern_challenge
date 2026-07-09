@@ -23,7 +23,7 @@ const drops = [
     priceCents: 89900,
     imageUrl:
       'https://images.stockx.com/images/Air-Jordan-1-Retro-High-OG-Chicago-Reimagined-Product.jpg?fit=fill&bg=FFFFFF&w=1200&h=857&q=90',
-    releaseAt: '2026-07-15T16:00:00.000Z',
+    releaseAt: '2026-07-08T16:00:00.000Z',
     sizeStocks: [1, 1, 2, 3, 2, 2, 1],
   },
   {
@@ -38,8 +38,9 @@ const drops = [
     priceCents: 54900,
     imageUrl:
       'https://static.nike.com/a/images/t_web_pdp_535_v2/f_auto%2Cu_9ddf04c7-2a9a-4d76-add1-d15af8f0263d%2Cc_scale%2Cfl_relative%2Cw_1.0%2Ch_1.0%2Cfl_layer_apply/b1bcbca4-e853-4df7-b329-5be3c61ee057/NIKE%2BDUNK%2BLOW%2BRETRO.png',
-    releaseAt: '2026-07-18T16:00:00.000Z',
-    sizeStocks: [2, 3, 4, 4, 3, 2, 2],
+    releaseAt: '2026-07-04T16:00:00.000Z',
+    sizeStocks: [0, 0, 0, 0, 0, 0, 0],
+    soldStocks: [2, 3, 4, 4, 3, 2, 2],
   },
   {
     sku: 'NIKE-AM1-UNIVERSITY-BLUE',
@@ -53,7 +54,7 @@ const drops = [
     priceCents: 69900,
     imageUrl:
       'https://images.stockx.com/images/Nike-Air-Max-1-White-University-Blue-Product.jpg?fit=fill&bg=FFFFFF&w=1200&h=857&q=90',
-    releaseAt: '2026-07-20T16:00:00.000Z',
+    releaseAt: '2026-07-09T08:00:00.000Z',
     sizeStocks: [1, 1, 2, 2, 2, 1, 1],
   },
   {
@@ -68,7 +69,7 @@ const drops = [
     priceCents: 49900,
     imageUrl:
       'https://assets.adidas.com/images/w_940%2Cf_auto%2Cq_auto/3bbecbdf584e40398446a8bf0117cf62_9366/B75806_01_00_standard.jpg',
-    releaseAt: '2026-07-22T16:00:00.000Z',
+    releaseAt: '2026-07-09T16:00:00.000Z',
     sizeStocks: [2, 2, 3, 3, 2, 1, 1],
   },
   {
@@ -83,7 +84,7 @@ const drops = [
     priceCents: 74900,
     imageUrl:
       'https://cdn.dam.salomon.com/7077caf9-2bb6-48cc-b930-b2f401647181/L47445300/PNG-2000px-max-72dpi.png?auto=avif&bg-color=f5f5f5&canvas=116p%2C144p&fit=cover&format=pjpg&optimize=low&width=3840',
-    releaseAt: '2026-07-24T16:00:00.000Z',
+    releaseAt: '2026-07-18T16:00:00.000Z',
     sizeStocks: [1, 2, 2, 3, 2, 1, 1],
   },
   {
@@ -98,8 +99,9 @@ const drops = [
     priceCents: 67900,
     imageUrl:
       'https://www.buzzsneakers.hr/files/thumbs/files/images/slike-proizvoda/media/120/1203A537-110/images/thumbs_320/1203A537-110_320px.jpg',
-    releaseAt: '2026-07-26T16:00:00.000Z',
-    sizeStocks: [1, 2, 3, 3, 2, 2, 1],
+    releaseAt: '2026-07-02T16:00:00.000Z',
+    sizeStocks: [0, 0, 0, 0, 0, 0, 0],
+    soldStocks: [1, 2, 3, 3, 2, 2, 1],
   },
   {
     sku: 'NB-9060-U9060ECA',
@@ -113,7 +115,7 @@ const drops = [
     priceCents: 71900,
     imageUrl:
       'https://images.stockx.com/images/New-Balance-9060-Sea-Salt-White-Product.jpg?fit=fill&bg=FFFFFF&w=1200&h=857&q=90',
-    releaseAt: '2026-07-28T16:00:00.000Z',
+    releaseAt: '2026-07-20T16:00:00.000Z',
     sizeStocks: [1, 1, 2, 3, 3, 2, 1],
   },
 ];
@@ -129,7 +131,10 @@ async function main(): Promise<void> {
 
   try {
     for (const drop of drops) {
-      const stockTotal = drop.sizeStocks.reduce((sum, stock) => sum + stock, 0);
+      const soldStocks = drop.soldStocks ?? drop.sizeStocks.map(() => 0);
+      const stockAvailable = drop.sizeStocks.reduce((sum, stock) => sum + stock, 0);
+      const stockSold = soldStocks.reduce((sum, stock) => sum + stock, 0);
+      const stockTotal = stockAvailable + stockSold;
       const productResult = await pool.query<{ id: number }>(
         `
           INSERT INTO products (
@@ -148,7 +153,7 @@ async function main(): Promise<void> {
             stock_reserved,
             stock_sold
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11, 0, 0)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, $13)
           ON CONFLICT (sku) DO UPDATE
           SET slug = EXCLUDED.slug,
               brand = EXCLUDED.brand,
@@ -159,6 +164,10 @@ async function main(): Promise<void> {
               price_cents = EXCLUDED.price_cents,
               image_url = EXCLUDED.image_url,
               release_at = EXCLUDED.release_at,
+              stock_total = EXCLUDED.stock_total,
+              stock_available = EXCLUDED.stock_available,
+              stock_reserved = EXCLUDED.stock_reserved,
+              stock_sold = EXCLUDED.stock_sold,
               archived_at = NULL,
               updated_at = now()
           RETURNING id
@@ -175,13 +184,17 @@ async function main(): Promise<void> {
           drop.imageUrl,
           drop.releaseAt,
           stockTotal,
+          stockAvailable,
+          stockSold,
         ],
       );
 
       const productId = productResult.rows[0].id;
 
       for (let index = 0; index < sizes.length; index += 1) {
-        const sizeStock = drop.sizeStocks[index];
+        const sizeAvailable = drop.sizeStocks[index];
+        const sizeSold = soldStocks[index];
+        const sizeTotal = sizeAvailable + sizeSold;
         await pool.query(
           `
             INSERT INTO product_sizes (
@@ -192,15 +205,16 @@ async function main(): Promise<void> {
               stock_reserved,
               stock_sold
             )
-            VALUES ($1, $2, $3, $3, 0, 0)
+            VALUES ($1, $2, $3, $4, 0, $5)
             ON CONFLICT (product_id, size_code) DO UPDATE
             SET stock_total = EXCLUDED.stock_total,
                 stock_available = EXCLUDED.stock_available,
+                stock_reserved = EXCLUDED.stock_reserved,
+                stock_sold = EXCLUDED.stock_sold,
                 updated_at = now()
             WHERE product_sizes.stock_reserved = 0
-              AND product_sizes.stock_sold = 0
           `,
-          [productId, sizes[index], sizeStock],
+          [productId, sizes[index], sizeTotal, sizeAvailable, sizeSold],
         );
       }
 

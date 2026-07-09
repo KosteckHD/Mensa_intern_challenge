@@ -8,6 +8,7 @@ import {
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3100/api';
+const REQUEST_TIMEOUT_MS = 10000;
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -16,16 +17,48 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof DOMException && error.name === 'AbortError'
+        ? 'Request timed out. Make sure the DropLock backend is running and reachable.'
+        : 'Unable to reach the DropLock backend. Make sure the server is running on the configured API URL.';
+
+    throw new ApiError(0, message);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
-    throw new ApiError(response.status, response.statusText);
+    let message = response.statusText;
+
+    try {
+      const errorBody = await response.json();
+
+      if (Array.isArray(errorBody.message)) {
+        message = errorBody.message.join(', ');
+      } else if (typeof errorBody.message === 'string') {
+        message = errorBody.message;
+      } else {
+        message = JSON.stringify(errorBody);
+      }
+    } catch {
+      message = await response.text();
+    }
+
+    throw new ApiError(response.status, message);
   }
 
   return response.json() as Promise<T>;
@@ -43,7 +76,12 @@ export const droplockApi = {
   }) =>
     request<Reservation>('/reservations', {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        ...input,
+        productId: Number(input.productId),
+        quantity: Number(input.quantity),
+        shoeSize: input.shoeSize,
+      }),
     }),
   checkoutReservation: (id: number, input: CheckoutInput) =>
     request<CheckoutResponse>(`/reservations/${id}/checkout`, {

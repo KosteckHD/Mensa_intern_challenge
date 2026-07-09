@@ -32,6 +32,7 @@ export interface Reservation {
 }
 
 export function mapReservation(row: ReservationRow): Reservation {
+ 
   return {
     id: row.id,
     productId: row.product_id,

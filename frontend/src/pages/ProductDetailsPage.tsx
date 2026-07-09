@@ -128,7 +128,10 @@ export function ProductDetailsPage() {
     : 'TBA';
 
   async function submitReservation() {
-    if (!shoeSize || !product) return;
+    if (!shoeSize || !product) {
+      
+      return;
+    }
     setReserving(true);
     try {
       const created = await reserve(product, shoeSize, email);
@@ -239,7 +242,7 @@ export function ProductDetailsPage() {
           <button
             className="showcase-reserve"
             disabled={!shoeSize || selectedStock === 0 || reserving}
-            onClick={() => void submitReservation()}
+            onClick={() =>  submitReservation()}
           >
             {reserving ? 'Securing allocation...' : 'Reserve now'}
           </button>

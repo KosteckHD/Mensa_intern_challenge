@@ -15,7 +15,6 @@ export function ProductsPage() {
   const [availableOnly, setAvailableOnly] = useState(true);
   const [sizeFilter, setSizeFilter] = useState('all');
   const [brandFilter, setBrandFilter] = useState('all');
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const navigate = useNavigate();
 
@@ -76,6 +75,13 @@ export function ProductsPage() {
   );
   const visibleProducts = filteredProducts.slice(0, visibleCount);
   const canLoadMore = visibleCount < filteredProducts.length;
+  const filtersActive =
+    query.trim() !== '' ||
+    !availableOnly ||
+    sizeFilter !== 'all' ||
+    brandFilter !== 'all';
+
+ 
 
   if (loadingProducts) return <LoadingProducts />;
 
@@ -87,7 +93,6 @@ export function ProductsPage() {
           <div className="products-stats">
             <DataPoint label="TOTAL PRODUCTS" value={stats.products} />
             <DataPoint label="TOTAL PAIRS" value={stats.total} />
-            <DataPoint label="VALUATION" value={formatPrice(valuationCents)} />
           </div>
         </div>
 
@@ -104,16 +109,6 @@ export function ProductsPage() {
           </label>
 
           <div className="catalog-controls">
-            <label className="switch catalog-availability">
-              <input
-                type="checkbox"
-                checked={availableOnly}
-                onChange={(event) => setAvailableOnly(event.target.checked)}
-              />
-              <span aria-hidden="true" />
-              Only available
-            </label>
-
             <label className="catalog-select">
               <span>Size</span>
               <select
@@ -130,45 +125,48 @@ export function ProductsPage() {
               </select>
             </label>
 
-            <button
-              className={`catalog-filter-button ${filtersOpen ? 'active' : ''}`}
-              onClick={() => setFiltersOpen((open) => !open)}
-              aria-expanded={filtersOpen}
-            >
-              <span aria-hidden="true">≡</span> Filters
-            </button>
-          </div>
-        </div>
-
-        {filtersOpen && (
-          <div className="catalog-filter-panel">
-            <label>
+            <label className="catalog-select">
               <span>Brand</span>
               <select
                 value={brandFilter}
                 onChange={(event) => setBrandFilter(event.target.value)}
+                aria-label="Filter by brand"
               >
                 <option value="all">All brands</option>
                 {brands.map((brand) => (
-                  <option key={brand} value={brand}>{brand}</option>
+                  <option key={brand} value={brand}>
+                    {brand}
+                  </option>
                 ))}
               </select>
             </label>
-            <button
-              onClick={() => {
-                setQuery('');
-                setAvailableOnly(true);
-                setSizeFilter('all');
-                setBrandFilter('all');
-              }}
-            >
-              Clear filters
-            </button>
+
+            <label className="switch catalog-availability">
+              <input
+                type="checkbox"
+                checked={availableOnly}
+                onChange={(event) => setAvailableOnly(event.target.checked)}
+              />
+              <span aria-hidden="true" />
+              Only available
+            </label>
           </div>
-        )}
+        </div>
+
+        
       </section>
 
-      {visibleProducts.length === 0 ? (
+      {visibleProducts.length === 0 && filtersActive ? (
+        <section className="state-page empty">
+          <div className="empty-icon" aria-hidden="true">⌕</div>
+          <p className="kicker">State: Filtered</p>
+          <h1>No products match your filters</h1>
+          <p>
+            Try a different size, brand, availability setting, or search term.
+          </p>
+          
+        </section>
+      ) : visibleProducts.length === 0 ? (
         <EmptyProducts onRefresh={() => void refreshProducts()} />
       ) : (
         <section className="catalog-grid" aria-label="Product catalog">
@@ -184,13 +182,13 @@ export function ProductsPage() {
         </section>
       )}
 
-      {filteredProducts.length > 0 && (
+      {canLoadMore && (
         <div className="catalog-load-more">
           <button
             disabled={!canLoadMore}
             onClick={() => setVisibleCount((count) => count + pageSize)}
           >
-            Load next 24 items <span aria-hidden="true">↓</span>
+            Load next {pageSize} items <span aria-hidden="true">↓</span>
           </button>
         </div>
       )}
@@ -205,20 +203,27 @@ function ProductCard({
   product: Product;
   onOpen: () => void;
 }) {
+  const releaseAt = product.releaseAt ? new Date(product.releaseAt) : null;
+  const upcoming = releaseAt ? releaseAt.getTime() > Date.now() : false;
   const soldOut = product.stockAvailable === 0;
-  const lowStock = product.stockAvailable > 0 && product.stockAvailable <= 3;
-  const status = soldOut ? 'Sold out' : lowStock ? 'Low stock' : 'Live';
+  const lowStock = !upcoming && product.stockAvailable > 0 && product.stockAvailable <= 3;
+  const status = soldOut
+    ? 'Sold out'
+    : upcoming
+      ? `Available at ${formatReleaseBadgeDate(releaseAt)}`
+      : lowStock
+        ? 'Low stock'
+        : 'Live';
+  const statusClass = soldOut ? 'sold' : upcoming ? 'soon' : lowStock ? 'low' : 'live';
 
   return (
     <article
       className={`catalog-card ${soldOut ? 'catalog-card-sold' : ''}`}
     >
       <span
-        className={`catalog-status ${
-          soldOut ? 'sold' : lowStock ? 'low' : 'live'
-        }`}
+        className={`catalog-status ${statusClass}`}
       >
-        {!soldOut && !lowStock && <i />}
+        {statusClass === 'live' && <i />}
         {status}
       </span>
 
@@ -240,7 +245,6 @@ function ProductCard({
         </div>
 
         <p className="catalog-stock">
-          <span aria-hidden="true">{soldOut ? '⊘' : lowStock ? '!' : '□'}</span>
           {product.stockAvailable} / {product.stockTotal} Available
         </p>
 
@@ -254,4 +258,13 @@ function ProductCard({
       </div>
     </article>
   );
+}
+
+function formatReleaseBadgeDate(releaseAt: Date | null): string {
+  if (!releaseAt || Number.isNaN(releaseAt.getTime())) return 'Soon';
+
+  return new Intl.DateTimeFormat('en-US', {
+    day: 'numeric',
+    month: 'short',
+  }).format(releaseAt);
 }

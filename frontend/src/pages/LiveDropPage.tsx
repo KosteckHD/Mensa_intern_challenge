@@ -8,8 +8,11 @@ import { Product } from '../types/api';
 export function LiveDropPage() {
   const { products, stats, loadingProducts, refreshProducts } = useDrop();
   const navigate = useNavigate();
-  const featured =
-    products.find((item) => item.stockAvailable > 0) ?? products[0] ?? null;
+  const sortedByReleaseDistance = [...products].sort(
+    (first, second) =>
+      releaseDistance(first.releaseAt) - releaseDistance(second.releaseAt),
+  );
+  const featured = sortedByReleaseDistance[0] ?? null;
 
   if (loadingProducts) return <LoadingProducts />;
   if (!featured) {
@@ -20,15 +23,13 @@ export function LiveDropPage() {
     navigate(`/products/${product.id}`, { state: { product } });
   const releaseDate = featured.releaseAt
     ? new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: 'numeric',
         month: 'short',
         day: 'numeric',
         year: 'numeric',
       }).format(new Date(featured.releaseAt))
     : 'Available now';
-  const availableSizes = featured.sizes.filter(
-    (size) => size.stockAvailable > 0,
-  ).length;
-
   return (
     <section className="drop-landing">
       <article className="drop-hero">
@@ -39,7 +40,6 @@ export function LiveDropPage() {
         </div>
 
         <div className="drop-hero-copy">
-          <p>{featured.brand}</p>
           <h1>{featured.name}</h1>
           <span className="drop-colorway">{featured.colorway}</span>
           <p className="drop-description">
@@ -62,8 +62,8 @@ export function LiveDropPage() {
 
         <dl className="drop-availability">
           <div>
-            <dt>Available sizes</dt>
-            <dd>{availableSizes}</dd>
+            <dt>Available at</dt>
+            <dd>{releaseDate}</dd>
           </div>
           <div>
             <dt>Total supply</dt>
@@ -95,7 +95,10 @@ export function LiveDropPage() {
         </header>
 
         <div className="next-drop-grid">
-          {products.slice(1, 5).map((product, index) => (
+          {sortedByReleaseDistance
+            .filter((product) => product.id !== featured.id && product.stockAvailable > 0)
+            .slice(0, 4)
+            .map((product, index) => (
             <button
               key={product.id}
               className="next-drop"
@@ -122,4 +125,12 @@ export function LiveDropPage() {
       </section>
     </section>
   );
+}
+
+function releaseDistance(releaseAt: string | null): number {
+  if (!releaseAt) return Number.MAX_SAFE_INTEGER;
+  const releaseTime = new Date(releaseAt).getTime();
+  return Number.isNaN(releaseTime)
+    ? Number.MAX_SAFE_INTEGER
+    : Math.abs(Date.now() - releaseTime);
 }

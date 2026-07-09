@@ -113,6 +113,7 @@ export function DropProvider({ children }: { children: ReactNode }) {
 
   async function reserve(product: Product, shoeSize: string, email: string) {
     setLastAttempt({ product, shoeSize });
+
     try {
       const created = await droplockApi.createReservation({
         productId: product.id,
@@ -120,6 +121,7 @@ export function DropProvider({ children }: { children: ReactNode }) {
         quantity: 1,
         shoeSize,
       });
+
       const nextReservation = { ...created, shoeSize };
       setReservation(nextReservation);
       setFailure(null);
