@@ -1,4 +1,4 @@
-DropLock - Limited Sneaker Drop app
+# DropLock - Limited Sneaker Drop app
 
 Full-stack internship challenge implementation for a limited product drop. The app models a sneaker release where many users can try to reserve the same limited item at the same time, while PostgreSQL transactions keep inventory accurate.
 
